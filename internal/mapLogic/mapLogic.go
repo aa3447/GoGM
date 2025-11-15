@@ -1,0 +1,170 @@
+package mapLogic
+
+import (
+	"errors"
+	"fmt"
+	"math"
+	"math/rand"
+	"slices"
+)
+
+type NPC struct{
+	Name string
+	Description string
+	Hostile bool
+	Health int
+	Attack int
+	Defense int
+}
+
+type Encounter struct{
+	NPCs []NPC
+}
+
+type Tile struct{
+	Name string
+	Terrain Terrain
+	Description string
+	Walkable bool
+	Encounter Encounter
+	Entrance bool
+	Exit bool
+	VisibleOnMap bool
+}
+
+
+type Terrain int
+const (
+	TerrainGrass Terrain = iota
+	TerrainWater
+	TerrainMountain
+	TerrainForest
+)
+
+// Generate a random map with given size and terrain probabilities
+//Terrain probabilities go in the order of Grass, Water, Mountain, Forest and should sum to 1.0
+func GenRandomMap(sizeX int, sizeY int, encounterProbability float64 ,terrainProbability []float64) ([][]Tile, error){
+	if sizeX <= 0 || sizeY <= 0{
+		return nil, errors.New("invalid map size")
+	}
+	if len(terrainProbability) != 4{
+		return nil, errors.New("Terrain probability must have exactly 4 elements")
+	}
+	if math.Abs(terrainProbability[0] + terrainProbability[1] + terrainProbability[2] + terrainProbability[3] - 1.0) > 0.0001{
+		return nil, errors.New("Terrain probabilities must sum to 1.0")
+	}
+
+	slices.Sort(terrainProbability)
+
+	tileMap := make([][]Tile, sizeX)
+	for rowIndex := range sizeX{
+		for columnIndex := range sizeY{
+			tile := Tile{
+				Name: fmt.Sprintf("%d,%d", rowIndex, columnIndex),
+				VisibleOnMap: false,
+			}
+
+			randVal := rand.Float64()
+			switch {
+				case randVal < terrainProbability[0]:
+					tile.Terrain = TerrainGrass
+					tile.Description = "A grassy field."
+					tile.Walkable = true
+				case randVal < terrainProbability[1]:
+					tile.Terrain = TerrainWater
+					tile.Description = "A body of water."
+					tile.Walkable = false
+				case randVal < terrainProbability[2]:
+					tile.Terrain = TerrainMountain
+					tile.Description = "A towering mountain."
+					tile.Walkable = false
+				default:
+					tile.Terrain = TerrainForest
+					tile.Description = "A dense forest."
+					tile.Walkable = true
+			}
+
+			encounterRoll := rand.Float64()
+			if encounterRoll < encounterProbability{
+				//tile.Encounter = generateRandomEncounter()
+				tile.Encounter = Encounter{}
+			}
+
+			tileMap[rowIndex] = append(tileMap[rowIndex], tile)
+		}
+	}
+
+	topOrSideEntrance := rand.Float64()
+	if topOrSideEntrance < 0.5{
+		entranceX := rand.Intn(sizeX)
+		exitX := rand.Intn(sizeX)
+		topOrBottomEntrance := int(math.Round(rand.Float64())) * (sizeY - 1)
+		tileMap[entranceX][topOrBottomEntrance].Entrance = true
+		tileMap[entranceX][topOrBottomEntrance].Walkable = true
+		tileMap[entranceX][topOrBottomEntrance].VisibleOnMap = true
+		if topOrBottomEntrance == 0{{
+			tileMap[exitX][sizeY-1].Exit = true
+			tileMap[exitX][sizeY-1].Walkable = true
+		}
+		} else {
+			tileMap[exitX][0].Exit = true
+			tileMap[exitX][0].Walkable = true
+		}
+	} else {
+		entranceY := rand.Intn(sizeY)
+		exitY := rand.Intn(sizeY)
+		leftOrRightEntrance := int(math.Round(rand.Float64())) * (sizeX - 1)
+		tileMap[leftOrRightEntrance][entranceY].Entrance = true
+		tileMap[leftOrRightEntrance][entranceY].Walkable = true
+		tileMap[leftOrRightEntrance][entranceY].VisibleOnMap = true
+		if leftOrRightEntrance == 0{
+			tileMap[sizeX-1][exitY].Exit = true
+			tileMap[sizeX-1][exitY].Walkable = true
+		} else {
+			tileMap[0][exitY].Exit = true
+			tileMap[0][exitY].Walkable = true
+		}
+	}
+
+	return tileMap, nil
+}
+
+func PrintMap(tileMap [][]Tile){
+	for _,row := range tileMap{
+		for _,tile := range row{
+			if tile.VisibleOnMap{
+				switch tile.Terrain{
+					case TerrainGrass:
+						fmt.Print(".")
+					case TerrainWater:
+						fmt.Print("~")
+					case TerrainMountain:
+						fmt.Print("^")
+					case TerrainForest:
+						fmt.Print("*")
+					}
+			} else {
+				fmt.Print(" ")
+			}
+		}
+		fmt.Println()
+	}
+}
+
+func PrintMapDebug(tileMap [][]Tile){
+	for _,row := range tileMap{
+		for _,tile := range row{
+			switch tile.Terrain{
+				case TerrainGrass:
+					fmt.Print(".")
+				case TerrainWater:
+					fmt.Print("~")
+				case TerrainMountain:
+					fmt.Print("^")
+				case TerrainForest:
+					fmt.Print("*")
+			}
+		}
+		fmt.Println()
+	}
+}
