@@ -41,24 +41,24 @@ const (
 	TerrainForest
 )
 
-// Generate a random map with given size and terrain probabilities
+// Generate a random map with given sizeX and terrain probabilities
 //Terrain probabilities go in the order of Grass, Water, Mountain, Forest and should sum to 1.0
-func GenRandomMap(sizeX int, sizeY int, encounterProbability float64 ,terrainProbability []float64) ([][]Tile, error){
-	if sizeX <= 0 || sizeY <= 0{
-		return nil, errors.New("invalid map size")
+func GenRandomMap(sizeY int, sizeX int, encounterProbability float64 ,terrainProbability []float64) ([][]Tile, []int, error){
+	if sizeY <= 0 || sizeX <= 0{
+		return nil, nil, errors.New("invalid map sizeX")
 	}
 	if len(terrainProbability) != 4{
-		return nil, errors.New("Terrain probability must have exactly 4 elements")
+		return nil, nil, errors.New("Terrain probability must have exactly 4 elements")
 	}
 	if math.Abs(terrainProbability[0] + terrainProbability[1] + terrainProbability[2] + terrainProbability[3] - 1.0) > 0.0001{
-		return nil, errors.New("Terrain probabilities must sum to 1.0")
+		return nil, nil, errors.New("Terrain probabilities must sum to 1.0")
 	}
 
 	slices.Sort(terrainProbability)
 
-	tileMap := make([][]Tile, sizeX)
-	for rowIndex := range sizeX{
-		for columnIndex := range sizeY{
+	tileMap := make([][]Tile, sizeY)
+	for rowIndex := range sizeY{
+		for columnIndex := range sizeX{
 			tile := Tile{
 				Name: fmt.Sprintf("%d,%d", rowIndex, columnIndex),
 				VisibleOnMap: false,
@@ -94,39 +94,51 @@ func GenRandomMap(sizeX int, sizeY int, encounterProbability float64 ,terrainPro
 		}
 	}
 
+	entranceLocation := generateEntranceAndExit(tileMap)
+
+	return tileMap, entranceLocation, nil
+}
+
+func generateEntranceAndExit(tileMap [][]Tile) []int{
+	sizeY := len(tileMap)
+	sizeX := len(tileMap[0])
+	entranceLocation := []int{}
+
 	topOrSideEntrance := rand.Float64()
 	if topOrSideEntrance < 0.5{
-		entranceX := rand.Intn(sizeX)
-		exitX := rand.Intn(sizeX)
-		topOrBottomEntrance := int(math.Round(rand.Float64())) * (sizeY - 1)
-		tileMap[entranceX][topOrBottomEntrance].Entrance = true
-		tileMap[entranceX][topOrBottomEntrance].Walkable = true
-		tileMap[entranceX][topOrBottomEntrance].VisibleOnMap = true
-		if topOrBottomEntrance == 0{{
-			tileMap[exitX][sizeY-1].Exit = true
-			tileMap[exitX][sizeY-1].Walkable = true
-		}
-		} else {
-			tileMap[exitX][0].Exit = true
-			tileMap[exitX][0].Walkable = true
-		}
-	} else {
 		entranceY := rand.Intn(sizeY)
 		exitY := rand.Intn(sizeY)
 		leftOrRightEntrance := int(math.Round(rand.Float64())) * (sizeX - 1)
-		tileMap[leftOrRightEntrance][entranceY].Entrance = true
-		tileMap[leftOrRightEntrance][entranceY].Walkable = true
-		tileMap[leftOrRightEntrance][entranceY].VisibleOnMap = true
-		if leftOrRightEntrance == 0{
-			tileMap[sizeX-1][exitY].Exit = true
-			tileMap[sizeX-1][exitY].Walkable = true
+		tileMap[entranceY][leftOrRightEntrance].Entrance = true
+		tileMap[entranceY][leftOrRightEntrance].Walkable = true
+		tileMap[entranceY][leftOrRightEntrance].VisibleOnMap = true
+		entranceLocation = append(entranceLocation, entranceY, leftOrRightEntrance)
+		if leftOrRightEntrance == 0{{
+			tileMap[exitY][sizeX-1].Exit = true
+			tileMap[exitY][sizeX-1].Walkable = true
+		}
 		} else {
-			tileMap[0][exitY].Exit = true
-			tileMap[0][exitY].Walkable = true
+			tileMap[exitY][0].Exit = true
+			tileMap[exitY][0].Walkable = true
+		}
+	} else {
+		entranceX := rand.Intn(sizeX)
+		exitX := rand.Intn(sizeX)
+		topOrBottomEntrance := int(math.Round(rand.Float64())) * (sizeY - 1)
+		tileMap[topOrBottomEntrance][entranceX].Entrance = true
+		tileMap[topOrBottomEntrance][entranceX].Walkable = true
+		tileMap[topOrBottomEntrance][entranceX].VisibleOnMap = true
+		entranceLocation = append(entranceLocation, topOrBottomEntrance, entranceX)
+		if topOrBottomEntrance == 0{
+			tileMap[sizeY-1][exitX].Exit = true
+			tileMap[sizeY-1][exitX].Walkable = true
+		} else {
+			tileMap[0][exitX].Exit = true
+			tileMap[0][exitX].Walkable = true
 		}
 	}
 
-	return tileMap, nil
+	return  entranceLocation
 }
 
 func PrintMap(tileMap [][]Tile){
@@ -163,6 +175,30 @@ func PrintMapDebug(tileMap [][]Tile){
 					fmt.Print("^")
 				case TerrainForest:
 					fmt.Print("*")
+			}
+		}
+		fmt.Println()
+	}
+}
+
+func PrintMapWithPlayer(tileMap [][]Tile, playerY int, playerX int){
+	for rowIndex, row := range tileMap{
+		for columnIndex, tile := range row{
+			if rowIndex == playerY && columnIndex == playerX{
+				fmt.Print("P")
+			} else if tile.VisibleOnMap{
+				switch tile.Terrain{
+					case TerrainGrass:
+						fmt.Print(".")
+					case TerrainWater:
+						fmt.Print("~")
+					case TerrainMountain:
+						fmt.Print("^")
+					case TerrainForest:
+						fmt.Print("*")
+					}
+			} else {
+				fmt.Print(" ")
 			}
 		}
 		fmt.Println()
