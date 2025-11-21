@@ -8,26 +8,39 @@ import (
 
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/gameLogic"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/mapLogic"
+	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/playerLogic"
+	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/serialization"
 )
 
 func PlayerLoop(){
-	commands := getInput()
-	gameState , err := gameLogic.NewGamestateWithRandomMap(10, 10, 0.2, []float64{0.5, 0.2, 0.2, 0.1})
+	gameState , entranceLocation, err := gameLogic.NewGamestateWithRandomMap(10, 10, 0.2, []float64{0.5, 0.2, 0.2, 0.1})
 	if err != nil{
 		fmt.Println("Error creating game state:", err)
 		return
 	}
+	err = serialization.SaveMapToFile(gameState.CurrentMap, gameState.CurrentMap.Name)
+	if err != nil{
+		fmt.Println("Error creating game state:", err)
+		return
+	}
+	player := player.NewPlayer("Hero", "The brave adventurer", "Warrior")
+	player.SetLocation(entranceLocation[0], entranceLocation[1])
+	
+	fmt.Println("Welcome,", player.Name)
+	fmt.Println("You find yourself at the entrance of a mysterious location.")
+	fmt.Println("Type 'move <direction>' to move (north, south, east, west), 'map' to view the map, or 'quit' to exit.")
+	
+	commands := getInput()
 	for {
 		command := commands[0]
 		args := commands[1:]
 		switch command {
 			case "move":
-				handleMove(gameState,args)
+				handleMove(gameState,player,args)
 			case "action":
 				//handleAction(args)
 			case "map":
-				playerY, playerX := gameState.GetPlayerPosition()
-				mapLogic.PrintMapWithPlayer(gameState.CurrentMap, playerY, playerX)
+				mapLogic.PrintMapWithPlayer(gameState.CurrentMap.Tiles, player)
 			case "quit":
 				fmt.Println("Quitting game.")
 				return
@@ -50,7 +63,7 @@ func getInput() []string{
 	return strings.Fields(line)
 }
 
-func handleMove(gs *gameLogic.Gamestate ,args []string){
+func handleMove(gs *gameLogic.Gamestate , player *player.Player ,args []string){
 	if len(args) < 1{
 		fmt.Println("Move where?")
 		return
@@ -60,13 +73,13 @@ func handleMove(gs *gameLogic.Gamestate ,args []string){
 
 	switch direction{
 		case "north", "up":
-			gs.MovePlayer(-1, 0)
+			gs.MovePlayer(player,-1, 0)
 		case "south", "down":
-			gs.MovePlayer(1, 0)
+			gs.MovePlayer(player,1, 0)
 		case "east", "right":
-			gs.MovePlayer(0, 1)
+			gs.MovePlayer(player,0, 1)
 		case "west", "left":
-			gs.MovePlayer(0, -1)
+			gs.MovePlayer(player,0, -1)
 		default:
 			fmt.Println("Unknown direction:", direction)
 	}

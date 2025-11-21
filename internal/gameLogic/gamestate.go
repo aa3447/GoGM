@@ -3,43 +3,37 @@ package gameLogic
 import (
 	"fmt"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/mapLogic"
+	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/playerLogic"
 )
 
 type Gamestate struct{
-	CurrentMap [][]mapLogic.Tile
-	PlayerPositionX int
-	PlayerPositionY int
+	CurrentMap mapLogic.Map
 }
 
-func NewGamestateWithRandomMap(mapSizeY int, mapSizeX int ,encounterProbability float64 ,terrainProbability []float64) (*Gamestate, error){
+func NewGamestateWithRandomMap(mapSizeY int, mapSizeX int ,encounterProbability float64 ,terrainProbability []float64) (*Gamestate, []int, error){
 	gameMap ,entranceLocation ,err := mapLogic.GenRandomMap(mapSizeY, mapSizeX, encounterProbability, terrainProbability)
 	if err != nil{
-		return nil, err
+		return nil, []int{},err
 	}
 	return &Gamestate{
 		CurrentMap: gameMap,
-		PlayerPositionX: entranceLocation[1],
-		PlayerPositionY: entranceLocation[0],
-	}, nil
+	}, entranceLocation, nil
 }
 
-func (gs *Gamestate) MovePlayer(deltaY int, deltaX int) error{
-	newY := gs.PlayerPositionY + deltaY
-	newX := gs.PlayerPositionX + deltaX
-	if newY < 0 || newY >= len(gs.CurrentMap) || newX < 0 || newX >= len(gs.CurrentMap[0]){
+func (gs *Gamestate) MovePlayer(player *player.Player ,deltaY int, deltaX int) error{
+	newY := player.PlayerPositionY + deltaY
+	newX := player.PlayerPositionX + deltaX
+	CurrentMapTiles := gs.CurrentMap.Tiles
+	if newY < 0 || newY >= len(CurrentMapTiles) || newX < 0 || newX >= len(CurrentMapTiles[0]){
 		fmt.Println("Cannot move out of bounds")
 		return nil // Out of bounds, ignore move
 	}
-	if !gs.CurrentMap[newY][newX].Walkable{
+	if !CurrentMapTiles[newY][newX].Walkable{
 		fmt.Println("Tile not walkable")
 		return nil // Tile not walkable, ignore move
 	}
-	gs.PlayerPositionY = newY
-	gs.PlayerPositionX = newX
-	gs.CurrentMap[newY][newX].VisibleOnMap = true
+	player.SetLocation(newY, newX)
+	CurrentMapTiles[newY][newX].VisibleOnMap = true
 	return nil
 }
 
-func (gs *Gamestate) GetPlayerPosition() (int, int){
-	return gs.PlayerPositionY, gs.PlayerPositionX
-}

@@ -3,6 +3,7 @@ package mapLogic
 import (
 	"errors"
 	"fmt"
+	player "home/aa3447/workspace/github.com/aa3447/GoGM/internal/playerLogic"
 	"math"
 	"math/rand"
 	"slices"
@@ -18,20 +19,25 @@ type NPC struct{
 }
 
 type Encounter struct{
-	NPCs []NPC
+	NPCs []NPC `json:"npcs"`
 }
 
 type Tile struct{
-	Name string
-	Terrain Terrain
-	Description string
-	Walkable bool
-	Encounter Encounter
-	Entrance bool
-	Exit bool
-	VisibleOnMap bool
+	Name string `json:"name"`
+	Terrain Terrain `json:"terrain"`
+	Description string `json:"description"`
+	Walkable bool `json:"walkable"`
+	Encounter Encounter `json:"encounter,omitempty"`
+	Entrance bool `json:"entrance,omitempty"`
+	Exit bool `json:"exit,omitempty"`
+	VisibleOnMap bool `json:"visible_on_map"`
 }
 
+type Map struct{
+	Name string `json:"name"`
+	Description string `json:"description"`
+	Tiles [][]Tile `json:"tiles"`
+}
 
 type Terrain int
 const (
@@ -43,15 +49,15 @@ const (
 
 // Generate a random map with given sizeX and terrain probabilities
 //Terrain probabilities go in the order of Grass, Water, Mountain, Forest and should sum to 1.0
-func GenRandomMap(sizeY int, sizeX int, encounterProbability float64 ,terrainProbability []float64) ([][]Tile, []int, error){
+func GenRandomMap(sizeY int, sizeX int, encounterProbability float64 ,terrainProbability []float64) (Map, []int, error){
 	if sizeY <= 0 || sizeX <= 0{
-		return nil, nil, errors.New("invalid map sizeX")
+		return Map{}, nil, errors.New("invalid map sizeX")
 	}
 	if len(terrainProbability) != 4{
-		return nil, nil, errors.New("Terrain probability must have exactly 4 elements")
+		return Map{}, nil, errors.New("Terrain probability must have exactly 4 elements")
 	}
 	if math.Abs(terrainProbability[0] + terrainProbability[1] + terrainProbability[2] + terrainProbability[3] - 1.0) > 0.0001{
-		return nil, nil, errors.New("Terrain probabilities must sum to 1.0")
+		return Map{}, nil, errors.New("Terrain probabilities must sum to 1.0")
 	}
 
 	slices.Sort(terrainProbability)
@@ -96,7 +102,13 @@ func GenRandomMap(sizeY int, sizeX int, encounterProbability float64 ,terrainPro
 
 	entranceLocation := generateEntranceAndExit(tileMap)
 
-	return tileMap, entranceLocation, nil
+	newMap := Map{
+		Name: "Random Map",
+		Description: "A randomly generated map.",
+		Tiles: tileMap,
+	}
+
+	return newMap, entranceLocation, nil
 }
 
 func generateEntranceAndExit(tileMap [][]Tile) []int{
@@ -181,7 +193,8 @@ func PrintMapDebug(tileMap [][]Tile){
 	}
 }
 
-func PrintMapWithPlayer(tileMap [][]Tile, playerY int, playerX int){
+func PrintMapWithPlayer(tileMap [][]Tile, player *player.Player){
+	playerY, playerX := player.GetPlayerPosition()
 	for rowIndex, row := range tileMap{
 		for columnIndex, tile := range row{
 			if rowIndex == playerY && columnIndex == playerX{
