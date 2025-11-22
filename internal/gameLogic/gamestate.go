@@ -7,7 +7,7 @@ import (
 )
 
 type Gamestate struct{
-	CurrentMap mapLogic.Map
+	CurrentMap *mapLogic.Map
 }
 
 func NewGamestateWithRandomMap(mapSizeY int, mapSizeX int ,encounterProbability float64 ,terrainProbability []float64) (*Gamestate, []int, error){
@@ -16,7 +16,7 @@ func NewGamestateWithRandomMap(mapSizeY int, mapSizeX int ,encounterProbability 
 		return nil, []int{},err
 	}
 	return &Gamestate{
-		CurrentMap: gameMap,
+		CurrentMap: &gameMap,
 	}, entranceLocation, nil
 }
 

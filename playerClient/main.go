@@ -1,18 +1,15 @@
-package client
+package main
 
 import (
-	"bufio"
 	"fmt"
-	"os"
-	"strings"
 
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/gameLogic"
-	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/mapLogic"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/playerLogic"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/serialization"
+	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/io"
 )
 
-func PlayerLoop(){
+func main(){
 	gameState , entranceLocation, err := gameLogic.NewGamestateWithRandomMap(10, 10, 0.2, []float64{0.5, 0.2, 0.2, 0.1})
 	if err != nil{
 		fmt.Println("Error creating game state:", err)
@@ -30,7 +27,7 @@ func PlayerLoop(){
 	fmt.Println("You find yourself at the entrance of a mysterious location.")
 	fmt.Println("Type 'move <direction>' to move (north, south, east, west), 'map' to view the map, or 'quit' to exit.")
 	
-	commands := getInput()
+	commands := io.GetInput()
 	for {
 		command := commands[0]
 		args := commands[1:]
@@ -40,28 +37,17 @@ func PlayerLoop(){
 			case "action":
 				//handleAction(args)
 			case "map":
-				mapLogic.PrintMapWithPlayer(gameState.CurrentMap.Tiles, player)
+				gameState.CurrentMap.PrintMapWithPlayer(player)
 			case "quit":
 				fmt.Println("Quitting game.")
 				return
 			default:
 				fmt.Println("Unknown command:", command)
 		}
-		commands = getInput()
+		commands = io.GetInput()
 	}
 }
 
-func getInput() []string{
-	fmt.Print("> ")
-	scanner := bufio.NewScanner(os.Stdin)
-	scanned := scanner.Scan()
-	if !scanned {
-		return nil
-	}
-	line := scanner.Text()
-	line = strings.TrimSpace(line)
-	return strings.Fields(line)
-}
 
 func handleMove(gs *gameLogic.Gamestate , player *player.Player ,args []string){
 	if len(args) < 1{

@@ -153,7 +153,8 @@ func generateEntranceAndExit(tileMap [][]Tile) []int{
 	return  entranceLocation
 }
 
-func PrintMap(tileMap [][]Tile){
+func (m *Map) PrintMap(){
+	tileMap := m.Tiles
 	for _,row := range tileMap{
 		for _,tile := range row{
 			if tile.VisibleOnMap{
@@ -175,7 +176,8 @@ func PrintMap(tileMap [][]Tile){
 	}
 }
 
-func PrintMapDebug(tileMap [][]Tile){
+func (m *Map) PrintMapDebug(){
+	tileMap := m.Tiles
 	for _,row := range tileMap{
 		for _,tile := range row{
 			switch tile.Terrain{
@@ -193,8 +195,40 @@ func PrintMapDebug(tileMap [][]Tile){
 	}
 }
 
-func PrintMapWithPlayer(tileMap [][]Tile, player *player.Player){
+func (m *Map) PrintMapDebugWithPlayers(players []*player.Player){
+	tileMap := m.Tiles
+	for rowIndex, row := range tileMap{
+		for columnIndex, tile := range row{
+			playerHere := false
+			for _, p := range players{
+				playerY, playerX := p.GetPlayerPosition()
+				if playerY == rowIndex && playerX == columnIndex{
+					playerHere = true
+					break
+				}
+			}
+			if playerHere{
+				fmt.Print("P")
+			} else {
+				switch tile.Terrain{
+					case TerrainGrass:
+						fmt.Print(".")
+					case TerrainWater:
+						fmt.Print("~")
+					case TerrainMountain:
+						fmt.Print("^")
+					case TerrainForest:
+						fmt.Print("*")
+				}
+			}
+		}
+		fmt.Println()
+	}
+}
+
+func (m *Map) PrintMapWithPlayer(player *player.Player){
 	playerY, playerX := player.GetPlayerPosition()
+	tileMap := m.Tiles
 	for rowIndex, row := range tileMap{
 		for columnIndex, tile := range row{
 			if rowIndex == playerY && columnIndex == playerX{
@@ -210,6 +244,40 @@ func PrintMapWithPlayer(tileMap [][]Tile, player *player.Player){
 					case TerrainForest:
 						fmt.Print("*")
 					}
+			} else {
+				fmt.Print(" ")
+			}
+		}
+		fmt.Println()
+	}
+}
+
+
+func (m *Map) PrintMapWithPlayers(players []*player.Player){
+	tileMap := m.Tiles
+	for rowIndex, row := range tileMap{
+		for columnIndex, tile := range row{
+			playerHere := false
+			for _, p := range players{
+				playerY, playerX := p.GetPlayerPosition()
+				if playerY == rowIndex && playerX == columnIndex{
+					playerHere = true
+					break
+				}
+			}
+			if playerHere{
+				fmt.Print("P")
+			} else if tile.VisibleOnMap{
+				switch tile.Terrain{
+					case TerrainGrass:
+						fmt.Print(".")
+					case TerrainWater:
+						fmt.Print("~")
+					case TerrainMountain:
+						fmt.Print("^")
+					case TerrainForest:
+						fmt.Print("*")
+				}
 			} else {
 				fmt.Print(" ")
 			}
