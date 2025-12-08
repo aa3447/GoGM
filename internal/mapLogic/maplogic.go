@@ -37,6 +37,9 @@ type Map struct{
 	Name string `json:"name"`
 	Description string `json:"description"`
 	Tiles [][]Tile `json:"tiles"`
+	EntranceLocation []int `json:"entrance_location,omitempty"`
+	ExitLocation []int `json:"exit_location,omitempty"`
+	FileLocation string `json:"file_location,omitempty"`
 }
 
 type Terrain int
@@ -49,15 +52,15 @@ const (
 
 // Generate a random map with given sizeX and terrain probabilities
 //Terrain probabilities go in the order of Grass, Water, Mountain, Forest and should sum to 1.0
-func GenRandomMap(sizeY int, sizeX int, encounterProbability float64 ,terrainProbability []float64) (Map, []int, error){
+func GenRandomMap(sizeY int, sizeX int, encounterProbability float64 ,terrainProbability []float64, name string) (Map,error){
 	if sizeY <= 0 || sizeX <= 0{
-		return Map{}, nil, errors.New("invalid map sizeX")
+		return Map{}, errors.New("invalid map sizeX")
 	}
 	if len(terrainProbability) != 4{
-		return Map{}, nil, errors.New("Terrain probability must have exactly 4 elements")
+		return Map{}, errors.New("Terrain probability must have exactly 4 elements")
 	}
 	if math.Abs(terrainProbability[0] + terrainProbability[1] + terrainProbability[2] + terrainProbability[3] - 1.0) > 0.0001{
-		return Map{}, nil, errors.New("Terrain probabilities must sum to 1.0")
+		return Map{}, errors.New("Terrain probabilities must sum to 1.0")
 	}
 
 	slices.Sort(terrainProbability)
@@ -100,21 +103,26 @@ func GenRandomMap(sizeY int, sizeX int, encounterProbability float64 ,terrainPro
 		}
 	}
 
-	entranceLocation := generateEntranceAndExit(tileMap)
+	entranceAndExitLocation := generateEntranceAndExit(tileMap)
 
+	if name == ""{
+		name = "Random Map"
+	}
 	newMap := Map{
-		Name: "Random Map",
+		Name: name,
 		Description: "A randomly generated map.",
 		Tiles: tileMap,
+		EntranceLocation: entranceAndExitLocation[0:2],
+		ExitLocation: entranceAndExitLocation[2:4],
 	}
 
-	return newMap, entranceLocation, nil
+	return newMap, nil
 }
 
 func generateEntranceAndExit(tileMap [][]Tile) []int{
 	sizeY := len(tileMap)
 	sizeX := len(tileMap[0])
-	entranceLocation := []int{}
+	entranceAndExitLocation := []int{}
 
 	topOrSideEntrance := rand.Float64()
 	if topOrSideEntrance < 0.5{
@@ -124,14 +132,16 @@ func generateEntranceAndExit(tileMap [][]Tile) []int{
 		tileMap[entranceY][leftOrRightEntrance].Entrance = true
 		tileMap[entranceY][leftOrRightEntrance].Walkable = true
 		tileMap[entranceY][leftOrRightEntrance].VisibleOnMap = true
-		entranceLocation = append(entranceLocation, entranceY, leftOrRightEntrance)
+		entranceAndExitLocation = append(entranceAndExitLocation, entranceY, leftOrRightEntrance)
 		if leftOrRightEntrance == 0{{
 			tileMap[exitY][sizeX-1].Exit = true
 			tileMap[exitY][sizeX-1].Walkable = true
+			entranceAndExitLocation = append(entranceAndExitLocation, exitY, sizeX-1)
 		}
 		} else {
 			tileMap[exitY][0].Exit = true
 			tileMap[exitY][0].Walkable = true
+			entranceAndExitLocation = append(entranceAndExitLocation, exitY, 0)
 		}
 	} else {
 		entranceX := rand.Intn(sizeX)
@@ -140,17 +150,19 @@ func generateEntranceAndExit(tileMap [][]Tile) []int{
 		tileMap[topOrBottomEntrance][entranceX].Entrance = true
 		tileMap[topOrBottomEntrance][entranceX].Walkable = true
 		tileMap[topOrBottomEntrance][entranceX].VisibleOnMap = true
-		entranceLocation = append(entranceLocation, topOrBottomEntrance, entranceX)
+		entranceAndExitLocation = append(entranceAndExitLocation, topOrBottomEntrance, entranceX)
 		if topOrBottomEntrance == 0{
 			tileMap[sizeY-1][exitX].Exit = true
 			tileMap[sizeY-1][exitX].Walkable = true
+			entranceAndExitLocation = append(entranceAndExitLocation, sizeY-1, exitX)
 		} else {
 			tileMap[0][exitX].Exit = true
 			tileMap[0][exitX].Walkable = true
+			entranceAndExitLocation = append(entranceAndExitLocation, 0, exitX)
 		}
 	}
 
-	return  entranceLocation
+	return  entranceAndExitLocation
 }
 
 func (m *Map) PrintMap(){

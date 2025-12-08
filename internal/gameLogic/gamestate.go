@@ -8,16 +8,26 @@ import (
 
 type Gamestate struct{
 	CurrentMap *mapLogic.Map
+	Maps []*mapLogic.Map
+	Players []*player.Player
 }
 
-func NewGamestateWithRandomMap(mapSizeY int, mapSizeX int ,encounterProbability float64 ,terrainProbability []float64) (*Gamestate, []int, error){
-	gameMap ,entranceLocation ,err := mapLogic.GenRandomMap(mapSizeY, mapSizeX, encounterProbability, terrainProbability)
+func NewGamestateWithRandomMap(mapSizeY int, mapSizeX int ,encounterProbability float64 ,terrainProbability []float64, mapName string) (*Gamestate, error){
+	gameMap , err := mapLogic.GenRandomMap(mapSizeY, mapSizeX, encounterProbability, terrainProbability,mapName)
 	if err != nil{
-		return nil, []int{},err
+		return nil ,err
 	}
 	return &Gamestate{
 		CurrentMap: &gameMap,
-	}, entranceLocation, nil
+		Maps: []*mapLogic.Map{&gameMap},
+	},  nil
+}
+
+func NewGamestateWithExistingMap(existingMap *mapLogic.Map) *Gamestate{
+	return &Gamestate{
+		CurrentMap: existingMap,
+		Maps: []*mapLogic.Map{existingMap},
+	}
 }
 
 func (gs *Gamestate) MovePlayer(player *player.Player ,deltaY int, deltaX int) error{

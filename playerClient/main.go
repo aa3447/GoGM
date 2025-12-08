@@ -2,26 +2,41 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"errors"
 
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/gameLogic"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/playerLogic"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/serialization"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/io"
+	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/pubsub"
+	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/mapLogic"
+
+
+	ampq "github.com/rabbitmq/amqp091-go"
 )
 
 func main(){
-	gameState , entranceLocation, err := gameLogic.NewGamestateWithRandomMap(10, 10, 0.2, []float64{0.5, 0.2, 0.2, 0.1})
+	conn, err := ampq.Dial("amqp://guest:guest@localhost:5672/")
 	if err != nil{
-		fmt.Println("Error creating game state:", err)
+		fmt.Println("failed to connect to RabbitMQ:", err)
 		return
 	}
-	err = serialization.SaveMapToFile(gameState.CurrentMap, gameState.CurrentMap.Name)
+	defer conn.Close()
+	
+	channel , err := conn.Channel()
 	if err != nil{
-		fmt.Println("Error creating game state:", err)
+		fmt.Println("failed to open a channel:", err)
 		return
 	}
+	defer channel.Close()
+	
+	maps := mapQueueSubscriber(channel)
+
+	gameState := gameLogic.NewGamestateWithExistingMap(<-maps)
+
 	player := player.NewPlayer("Hero", "The brave adventurer", "Warrior")
-	player.SetLocation(entranceLocation[0], entranceLocation[1])
+	player.SetLocation(gameState.CurrentMap.EntranceLocation[0], gameState.CurrentMap.EntranceLocation[1])
 	
 	fmt.Println("Welcome,", player.Name)
 	fmt.Println("You find yourself at the entrance of a mysterious location.")
@@ -69,4 +84,35 @@ func handleMove(gs *gameLogic.Gamestate , player *player.Player ,args []string){
 		default:
 			fmt.Println("Unknown direction:", direction)
 	}
+}
+
+func mapQueueSubscriber(channel *ampq.Channel) chan *mapLogic.Map{
+	maps := make(chan *mapLogic.Map)
+
+	msgs, err := pubsub.SubscribeToMapQueue(channel, pubsub.MapExchange, pubsub.MapRoutingKey)
+	if err != nil{
+		fmt.Println("Error subscribing to map queue:", err)
+		return nil
+	}
+
+	go func(){
+		for d := range msgs{
+			currentMap, err := serialization.JSONToMap(d.Body)
+			if err != nil{
+				fmt.Println("Error deserializing map:", err)
+				continue
+			}
+			_,err = os.Stat("./playerClient/map/" + currentMap.Name + ".json")
+			if errors.Is(err, os.ErrNotExist) {
+				err = serialization.SaveMapToFile(currentMap, "player", currentMap.Name)
+				if err != nil{
+					fmt.Println("Error saving map to file:", err)
+					continue
+				}
+				currentMap.FileLocation = "./playerClient/" + currentMap.Name
+			}
+			maps <- currentMap
+		}
+	}()
+	return maps
 }

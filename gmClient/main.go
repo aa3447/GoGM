@@ -26,7 +26,7 @@ func main(){
 	}
 	defer channel.Close()
 
-	gameState , _ ,err := gameLogic.NewGamestateWithRandomMap(10, 10, 0.2, []float64{0.5, 0.2, 0.2, 0.1})
+	gameState , err := gameLogic.NewGamestateWithRandomMap(10, 10, 0.2, []float64{0.5, 0.2, 0.2, 0.1},"")
 	if err != nil{
 		fmt.Println("Error creating game state:", err)
 		return
@@ -37,7 +37,7 @@ func main(){
 		return
 	}
 	currentMap := gameState.CurrentMap
-	err = serialization.SaveMapToFile(currentMap, currentMap.Name)
+	err = serialization.SaveMapToFile(currentMap, "gm", currentMap.Name)
 	if err != nil{
 		fmt.Println("Error creating game state:", err)
 		return

@@ -16,13 +16,13 @@ func MapToJSON(tileMap *mapLogic.Map) ([]byte,error){
 	return mapJson,nil
 }
 
-func SaveMapToFile(tileMap *mapLogic.Map, filename string) error{
+func SaveMapToFile(tileMap *mapLogic.Map, clientName, filename string) error{
 	mapJson, err := MapToJSON(tileMap)
 	if err != nil{
 		return err
 	}
 
-	filePath := fmt.Sprintf("./gmClient/map/%s.json", filename)
+	filePath := fmt.Sprintf("./" + clientName + "Client/map/%s.json", filename)
 	err = os.WriteFile(filePath, mapJson, 0644)
 	if err != nil{
 		return err
