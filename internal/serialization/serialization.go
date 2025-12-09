@@ -16,6 +16,14 @@ func MapToJSON(tileMap *mapLogic.Map) ([]byte,error){
 	return mapJson,nil
 }
 
+func MiscToJSON[T any](data T) ([]byte, error){
+	jsonData, err := json.MarshalIndent(data, "", "  ")
+	if err != nil{
+		return []byte{}, err
+	}
+	return jsonData, nil
+}
+
 func SaveMapToFile(tileMap *mapLogic.Map, clientName, filename string) error{
 	mapJson, err := MapToJSON(tileMap)
 	if err != nil{

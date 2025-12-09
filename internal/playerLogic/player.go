@@ -18,6 +18,11 @@ type Player struct{
 	PlayerPositionY int
 }
 
+type PlayerMove struct{
+	PlayerName string `json:"player_name"`
+	From []int `json:"from"`
+	To []int `json:"to"`
+}
 
 func NewPlayer(name string, description string, background string) *Player{
 	return &Player{

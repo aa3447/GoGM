@@ -5,11 +5,11 @@ import (
 	ampq "github.com/rabbitmq/amqp091-go"
 )
 
-func SubscribeToMapQueue(channel *ampq.Channel, exchangeName, routingKey string) (<-chan ampq.Delivery, error){
+func SubscribeToMapQueue(channel *ampq.Channel, queueName string) (<-chan ampq.Delivery, error){
 	
-	// Ensure the exchange exists
+	// Ensure the queue exists
 	mapQueue, err := channel.QueueDeclare(
-		MapQueue,
+		queueName,
 		true,
 		false,
 		false,
@@ -17,7 +17,7 @@ func SubscribeToMapQueue(channel *ampq.Channel, exchangeName, routingKey string)
 		nil,
 	)
 	if err != nil{
-		return nil,fmt.Errorf("failed to declare map queue: %v", err)
+		return nil, fmt.Errorf("failed to declare a queue: %v", err)
 	}
 
 	msgs, err := channel.Consume(

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/mapLogic"
+	player "home/aa3447/workspace/github.com/aa3447/GoGM/internal/playerLogic"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/serialization"
 
 	ampq "github.com/rabbitmq/amqp091-go"
@@ -24,7 +25,19 @@ func Start() error{
 
 	err = channel.ExchangeDeclare(
 		MapExchange,
-		"direct",
+		"fanout",
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil{
+		return fmt.Errorf("failed to declare an exchange: %v", err)
+	}
+	err = channel.ExchangeDeclare(
+		MoveExchange,
+		"fanout",
 		true,
 		false,
 		false,
@@ -35,8 +48,25 @@ func Start() error{
 		return fmt.Errorf("failed to declare an exchange: %v", err)
 	}
 
+	return nil
+}
+
+func QueueDeclareAndBindInit(channel *ampq.Channel, player *player.Player) error{
+	mapQueueName := MapQueue + "_" + player.Name
+	moveQueueName := MoveQueue + "_" + player.Name
 	mapQueue, err := channel.QueueDeclare(
-		MapQueue,
+		mapQueueName,
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil{
+		return fmt.Errorf("failed to declare a queue: %v", err)
+	}
+	moveQueue, err := channel.QueueDeclare(
+		moveQueueName,
 		true,
 		false,
 		false,
@@ -51,6 +81,16 @@ func Start() error{
 		mapQueue.Name,
 		MapRoutingKey,
 		MapExchange,
+		false,
+		nil,
+	)
+	if err != nil{
+		return fmt.Errorf("failed to bind a queue: %v", err)
+	}
+	err = channel.QueueBind(
+		moveQueue.Name,
+		MoveRoutingKey,
+		MoveExchange,
 		false,
 		nil,
 	)
@@ -82,3 +122,5 @@ func PublishMapToQueue(channel *ampq.Channel, exchange, routingKey string, tileM
 	}
 	return nil
 }
+
+

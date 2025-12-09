@@ -30,13 +30,22 @@ func main(){
 		return
 	}
 	defer channel.Close()
-	
-	maps := mapQueueSubscriber(channel)
-
-	gameState := gameLogic.NewGamestateWithExistingMap(<-maps)
 
 	player := player.NewPlayer("Hero", "The brave adventurer", "Warrior")
+	//player := player.NewPlayer(io.GetInput()[0], "The brave adventurer", "Warrior")
+
+	err = pubsub.QueueDeclareAndBindInit(channel, player)
+	if err != nil{
+		fmt.Println("Error declaring and binding queues:", err)
+		return
+	}
+	
+	maps := mapQueueSubscriber(channel,player)
+	
+	gameState := gameLogic.NewGamestateWithExistingMap(<-maps)
+	
 	player.SetLocation(gameState.CurrentMap.EntranceLocation[0], gameState.CurrentMap.EntranceLocation[1])
+
 	
 	fmt.Println("Welcome,", player.Name)
 	fmt.Println("You find yourself at the entrance of a mysterious location.")
@@ -86,10 +95,11 @@ func handleMove(gs *gameLogic.Gamestate , player *player.Player ,args []string){
 	}
 }
 
-func mapQueueSubscriber(channel *ampq.Channel) chan *mapLogic.Map{
+func mapQueueSubscriber(channel *ampq.Channel, player *player.Player) chan *mapLogic.Map{
 	maps := make(chan *mapLogic.Map)
+	queueName := pubsub.MapQueue + "_" + player.Name
 
-	msgs, err := pubsub.SubscribeToMapQueue(channel, pubsub.MapExchange, pubsub.MapRoutingKey)
+	msgs, err := pubsub.SubscribeToMapQueue(channel, queueName)
 	if err != nil{
 		fmt.Println("Error subscribing to map queue:", err)
 		return nil
@@ -105,6 +115,7 @@ func mapQueueSubscriber(channel *ampq.Channel) chan *mapLogic.Map{
 			_,err = os.Stat("./playerClient/map/" + currentMap.Name + ".json")
 			if errors.Is(err, os.ErrNotExist) {
 				err = serialization.SaveMapToFile(currentMap, "player", currentMap.Name)
+				//err = serialization.SaveMapToFile(currentMap, "player", player.Name)
 				if err != nil{
 					fmt.Println("Error saving map to file:", err)
 					continue
