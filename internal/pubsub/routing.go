@@ -8,12 +8,14 @@ const (
 
 // RabbitMQ Routing Keys
 const (
-	MapRoutingKey  = "mapRoutingKey"
+	MapNewRoutingKey  = "mapNewRoutingKey"
+	MapUpdateRoutingKey = "mapUpdateRoutingKey"
 	MoveRoutingKey = "moveRoutingKey"
 )
 
 // RabbitMQ Queues
 const (
-	MapQueue       = "mapQueue"
+	MapQueueNew       = "mapQueueNew"
+	MapQueueUpdate    = "mapQueueUpdate"
 	MoveQueue      = "moveQueue"
 )

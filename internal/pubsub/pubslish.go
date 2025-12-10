@@ -10,7 +10,7 @@ import (
 	ampq "github.com/rabbitmq/amqp091-go"
 )
 
-func Start() error{
+func SetupExchanges() error{
 	conn, err := ampq.Dial("amqp://guest:guest@localhost:5672/")
 	if err != nil{
 		return fmt.Errorf("failed to connect to RabbitMQ: %v", err)
@@ -25,7 +25,7 @@ func Start() error{
 
 	err = channel.ExchangeDeclare(
 		MapExchange,
-		"fanout",
+		"topic",
 		true,
 		false,
 		false,
@@ -33,7 +33,7 @@ func Start() error{
 		nil,
 	)
 	if err != nil{
-		return fmt.Errorf("failed to declare an exchange: %v", err)
+		return fmt.Errorf("failed to declare map exchange: %v", err)
 	}
 	err = channel.ExchangeDeclare(
 		MoveExchange,
@@ -45,17 +45,31 @@ func Start() error{
 		nil,
 	)
 	if err != nil{
-		return fmt.Errorf("failed to declare an exchange: %v", err)
+		return fmt.Errorf("failed to declare move exchange: %v", err)
 	}
 
 	return nil
 }
 
-func QueueDeclareAndBindInit(channel *ampq.Channel, player *player.Player) error{
-	mapQueueName := MapQueue + "_" + player.Name
+
+func QueueDeclareAndBindSetup(channel *ampq.Channel, player *player.Player) error{
+	mapQueueNewName := MapQueueNew + "_" + player.Name
+	mapQueueUpdateName := MapQueueUpdate + "_" + player.Name
 	moveQueueName := MoveQueue + "_" + player.Name
-	mapQueue, err := channel.QueueDeclare(
-		mapQueueName,
+	
+	mapQueueNew, err := channel.QueueDeclare(
+		mapQueueNewName,
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil{
+		return fmt.Errorf("failed to declare a queue: %v", err)
+	}
+	mapQueueUpdate, err := channel.QueueDeclare(
+		mapQueueUpdateName,
 		true,
 		false,
 		false,
@@ -78,8 +92,18 @@ func QueueDeclareAndBindInit(channel *ampq.Channel, player *player.Player) error
 	}
 
 	err = channel.QueueBind(
-		mapQueue.Name,
-		MapRoutingKey,
+		mapQueueNew.Name,
+		MapNewRoutingKey,
+		MapExchange,
+		false,
+		nil,
+	)
+	if err != nil{
+		return fmt.Errorf("failed to bind a queue: %v", err)
+	}
+	err = channel.QueueBind(
+		mapQueueUpdate.Name,
+		MapUpdateRoutingKey,
 		MapExchange,
 		false,
 		nil,

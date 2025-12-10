@@ -22,7 +22,7 @@ func SubscribeToMapQueue(channel *ampq.Channel, queueName string) (<-chan ampq.D
 
 	msgs, err := channel.Consume(
 		mapQueue.Name,
-		"map_consumer",
+		"",
 		true,
 		false,
 		false,

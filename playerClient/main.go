@@ -34,15 +34,17 @@ func main(){
 	player := player.NewPlayer("Hero", "The brave adventurer", "Warrior")
 	//player := player.NewPlayer(io.GetInput()[0], "The brave adventurer", "Warrior")
 
-	err = pubsub.QueueDeclareAndBindInit(channel, player)
+	err = pubsub.QueueDeclareAndBindSetup(channel, player)
 	if err != nil{
 		fmt.Println("Error declaring and binding queues:", err)
 		return
 	}
 	
-	maps := mapQueueSubscriber(channel,player)
+	newMaps := mapQueueNewSubscriber(channel,player)
 	
-	gameState := gameLogic.NewGamestateWithExistingMap(<-maps)
+	gameState := gameLogic.NewGamestateWithExistingMap(<-newMaps)
+	go addNewMaps(newMaps, gameState)
+	go updateMaps(mapQueueUpdateSubscriber(channel, player), gameState)
 	
 	player.SetLocation(gameState.CurrentMap.EntranceLocation[0], gameState.CurrentMap.EntranceLocation[1])
 
@@ -95,9 +97,33 @@ func handleMove(gs *gameLogic.Gamestate , player *player.Player ,args []string){
 	}
 }
 
-func mapQueueSubscriber(channel *ampq.Channel, player *player.Player) chan *mapLogic.Map{
-	maps := make(chan *mapLogic.Map)
-	queueName := pubsub.MapQueue + "_" + player.Name
+func addNewMaps(newMapsChan chan *mapLogic.Map, gs *gameLogic.Gamestate){
+	for newMaps := range newMapsChan{
+		newMap := newMaps
+		gs.AddMap(newMap)
+		fmt.Println("New map added:", newMap.Name)
+	}
+}
+
+func updateMaps(updateMapsChan chan *mapLogic.Map, gs *gameLogic.Gamestate){
+	for updateMaps := range updateMapsChan{
+		updatedMap := updateMaps
+		for i, existingMap := range gs.Maps{
+			if existingMap.Name == updatedMap.Name{
+				gs.Maps[i] = updatedMap
+				if gs.CurrentMap.Name == updatedMap.Name{
+					gs.CurrentMap = updatedMap
+				}
+				break
+			}
+		}
+		fmt.Println("Map updated:", updatedMap.Name)
+	}
+}
+
+func mapQueueNewSubscriber(channel *ampq.Channel, player *player.Player) chan *mapLogic.Map{
+	newMaps := make(chan *mapLogic.Map)
+	queueName := pubsub.MapQueueNew + "_" + player.Name
 
 	msgs, err := pubsub.SubscribeToMapQueue(channel, queueName)
 	if err != nil{
@@ -121,9 +147,43 @@ func mapQueueSubscriber(channel *ampq.Channel, player *player.Player) chan *mapL
 					continue
 				}
 				currentMap.FileLocation = "./playerClient/" + currentMap.Name
+				newMaps <- currentMap
 			}
-			maps <- currentMap
 		}
 	}()
-	return maps
+	return newMaps
+}
+
+func mapQueueUpdateSubscriber(channel *ampq.Channel, player *player.Player) chan *mapLogic.Map{
+	updateMaps := make(chan *mapLogic.Map)
+	queueName := pubsub.MapQueueUpdate + "_" + player.Name
+
+	msgs, err := pubsub.SubscribeToMapQueue(channel, queueName)
+	if err != nil{
+		fmt.Println("Error subscribing to map queue:", err)
+		return nil
+	}
+
+	go func(){
+		for d := range msgs{
+			currentMap, err := serialization.JSONToMap(d.Body)
+			if err != nil{
+				fmt.Println("Error deserializing map:", err)
+				continue
+			}
+			_,err = os.Stat("./playerClient/map/" + currentMap.Name + ".json")
+			if errors.Is(err, os.ErrNotExist) {
+				fmt.Println("Received update for unknown map:", currentMap.Name)
+				continue
+			}
+			err = serialization.SaveMapToFile(currentMap, "player", currentMap.Name)
+			if err != nil{
+				fmt.Println("Error saving map to file:", err)
+				continue
+			}
+			currentMap.FileLocation = "./playerClient/" + currentMap.Name
+			updateMaps <- currentMap
+		}
+	}()
+	return updateMaps
 }

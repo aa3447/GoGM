@@ -31,18 +31,18 @@ func main(){
 		fmt.Println("Error creating game state:", err)
 		return
 	}
-	err = pubsub.Start()
+	err = pubsub.SetupExchanges()
 	if err != nil{
 		fmt.Println("Error starting pubsub:", err)
 		return
 	}
 	currentMap := gameState.CurrentMap
+	
 	err = serialization.SaveMapToFile(currentMap, "gm", currentMap.Name)
 	if err != nil{
 		fmt.Println("Error creating game state:", err)
 		return
 	}
-	pubsub.PublishMapToQueue(channel, pubsub.MapExchange, pubsub.MapRoutingKey,currentMap)
 
 	gm := GM.NewGM("GameMaster", "The overseer of the game world")
 	
@@ -56,6 +56,36 @@ func main(){
 		switch command {
 			case "map":
 				currentMap.PrintMapDebug()
+			case "send":
+				if len(commands) < 2{
+					fmt.Println("Specify what to send: 'map'")
+					commands = io.GetInput()
+					continue
+				}
+				switch commands[1]{
+					case "map":
+						pubsub.PublishMapToQueue(channel, pubsub.MapExchange, pubsub.MapNewRoutingKey, currentMap)
+						fmt.Println("Map sent to players.")
+					default:
+						fmt.Println("Unknown send command:", commands[0])
+						commands = io.GetInput()
+						continue
+				}
+			case "update":
+				if len(commands) < 2{
+					fmt.Println("Specify what to update: 'map'")
+					commands = io.GetInput()
+					continue
+				}
+				switch commands[1]{
+					case "map":
+						pubsub.PublishMapToQueue(channel, pubsub.MapExchange, pubsub.MapUpdateRoutingKey, currentMap)
+						fmt.Println("Map update sent to players.")
+					default:
+						fmt.Println("Unknown update command:", commands[0])
+						commands = io.GetInput()
+						continue
+				}
 			case "quit":
 				fmt.Println("Quitting game.")
 				return

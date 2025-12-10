@@ -47,3 +47,7 @@ func (gs *Gamestate) MovePlayer(player *player.Player ,deltaY int, deltaX int) e
 	return nil
 }
 
+
+func (gs *Gamestate) AddMap(newMap *mapLogic.Map){
+	gs.Maps = append(gs.Maps, newMap)
+}
