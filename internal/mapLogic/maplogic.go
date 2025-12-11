@@ -3,10 +3,11 @@ package mapLogic
 import (
 	"errors"
 	"fmt"
-	player "home/aa3447/workspace/github.com/aa3447/GoGM/internal/playerLogic"
 	"math"
 	"math/rand"
 	"slices"
+
+	player "home/aa3447/workspace/github.com/aa3447/GoGM/internal/playerLogic"
 )
 
 type NPC struct{

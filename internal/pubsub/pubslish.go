@@ -126,7 +126,7 @@ func QueueDeclareAndBindSetup(channel *ampq.Channel, player *player.Player) erro
 }
 
 func PublishMapToQueue(channel *ampq.Channel, exchange, routingKey string, tileMap *mapLogic.Map) error{
-	mapJSON, err := serialization.MapToJSON(tileMap)
+	mapJSON, err := serialization.ToJSON(*tileMap)
 	if err != nil{
 		return fmt.Errorf("failed to serialize map to JSON: %v", err)
 	}

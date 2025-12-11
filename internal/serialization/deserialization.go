@@ -1,31 +1,40 @@
 package serialization
 
 import (
-	"os"
 	"encoding/json"
+	"os"
+	"fmt"
+
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/mapLogic"
+	player "home/aa3447/workspace/github.com/aa3447/GoGM/internal/playerLogic"
 )
 
-func JSONToMap(data []byte) (*mapLogic.Map, error){
-	var tileMap mapLogic.Map
-	err := json.Unmarshal(data, &tileMap)
-	if err != nil{
-		return nil, err
-	}
-	return &tileMap, nil
+type JSONSafe interface{
+	mapLogic.Map | player.PlayerMove
 }
 
-func LoadMapFromJSONFile(clientType, filename string) (*mapLogic.Map, error){
-	filePath := "./" + clientType + "Client/map/" + filename
-	data, err := os.ReadFile(filePath)
+// JSONTo deserializes JSON data into the specified type J.
+func JSONTo[J JSONSafe](data []byte, dataType J) (*J, error){
+	var unmarshaledData J
+	err := json.Unmarshal(data, &unmarshaledData)
+	if err != nil{
+		return nil, err
+	}
+	return &unmarshaledData, nil
+}
+
+// LoadFromJSONFile loads JSON data from a file and deserializes it into the specified type J.
+func LoadFromJSONFile[J JSONSafe](clientType, filetype, filename string, dataType J) (*J, error){
+	filePath := fmt.Sprintf("./%sClient/%s/%s.json", clientType, filetype, filename)
+	fileData, err := os.ReadFile(filePath)
 	if err != nil{
 		return nil, err
 	}
 
-	tileMap, err := JSONToMap(data)
+	json, err := JSONTo(fileData, dataType)
 	if err != nil{
 		return nil, err
 	}
 
-	return tileMap, nil
+	return json, nil
 }

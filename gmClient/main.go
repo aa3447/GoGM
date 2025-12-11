@@ -38,7 +38,7 @@ func main(){
 	}
 	currentMap := gameState.CurrentMap
 	
-	err = serialization.SaveMapToFile(currentMap, "gm", currentMap.Name)
+	err = serialization.SaveToFile(*currentMap, "gm" ,"map" ,currentMap.Name)
 	if err != nil{
 		fmt.Println("Error creating game state:", err)
 		return

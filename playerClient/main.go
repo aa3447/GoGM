@@ -133,20 +133,20 @@ func mapQueueNewSubscriber(channel *ampq.Channel, player *player.Player) chan *m
 
 	go func(){
 		for d := range msgs{
-			currentMap, err := serialization.JSONToMap(d.Body)
+			currentMap, err := serialization.JSONTo(d.Body, mapLogic.Map{})
 			if err != nil{
 				fmt.Println("Error deserializing map:", err)
 				continue
 			}
 			_,err = os.Stat("./playerClient/map/" + currentMap.Name + ".json")
 			if errors.Is(err, os.ErrNotExist) {
-				err = serialization.SaveMapToFile(currentMap, "player", currentMap.Name)
+				err = serialization.SaveToFile(*currentMap, "player" ,"map" ,currentMap.Name)
 				//err = serialization.SaveMapToFile(currentMap, "player", player.Name)
 				if err != nil{
 					fmt.Println("Error saving map to file:", err)
 					continue
 				}
-				currentMap.FileLocation = "./playerClient/" + currentMap.Name
+				currentMap.FileLocation = "./playerClient/map/" + currentMap.Name
 				newMaps <- currentMap
 			}
 		}
@@ -166,7 +166,7 @@ func mapQueueUpdateSubscriber(channel *ampq.Channel, player *player.Player) chan
 
 	go func(){
 		for d := range msgs{
-			currentMap, err := serialization.JSONToMap(d.Body)
+			currentMap, err := serialization.JSONTo(d.Body, mapLogic.Map{})
 			if err != nil{
 				fmt.Println("Error deserializing map:", err)
 				continue
@@ -176,12 +176,12 @@ func mapQueueUpdateSubscriber(channel *ampq.Channel, player *player.Player) chan
 				fmt.Println("Received update for unknown map:", currentMap.Name)
 				continue
 			}
-			err = serialization.SaveMapToFile(currentMap, "player", currentMap.Name)
+			err = serialization.SaveToFile(*currentMap, "player", "map", currentMap.Name)
 			if err != nil{
 				fmt.Println("Error saving map to file:", err)
 				continue
 			}
-			currentMap.FileLocation = "./playerClient/" + currentMap.Name
+			currentMap.FileLocation = "./playerClient/map/" + currentMap.Name
 			updateMaps <- currentMap
 		}
 	}()

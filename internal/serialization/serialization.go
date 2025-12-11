@@ -1,22 +1,13 @@
 package serialization
 
 import (
-	"fmt"
 	"os"
+	"fmt"
 	"encoding/json"
-	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/mapLogic"
 )
 
-func MapToJSON(tileMap *mapLogic.Map) ([]byte,error){
-	mapJson, err := json.MarshalIndent(*tileMap, "", "  ")
-	if err != nil{
-		return []byte{},err
-	}
 
-	return mapJson,nil
-}
-
-func MiscToJSON[T any](data T) ([]byte, error){
+func ToJSON[J JSONSafe](data J) ([]byte, error){
 	jsonData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil{
 		return []byte{}, err
@@ -24,13 +15,14 @@ func MiscToJSON[T any](data T) ([]byte, error){
 	return jsonData, nil
 }
 
-func SaveMapToFile(tileMap *mapLogic.Map, clientName, filename string) error{
-	mapJson, err := MapToJSON(tileMap)
+// SaveToFile saves the given data of type J to a JSON file.
+func SaveToFile[J JSONSafe](data J, clientType, filetype, filename string) error{
+	mapJson, err := ToJSON(data)
 	if err != nil{
 		return err
 	}
 
-	filePath := fmt.Sprintf("./" + clientName + "Client/map/%s.json", filename)
+	filePath := fmt.Sprintf("./%sClient/%s/%s.json", clientType, filetype, filename)
 	err = os.WriteFile(filePath, mapJson, 0644)
 	if err != nil{
 		return err
