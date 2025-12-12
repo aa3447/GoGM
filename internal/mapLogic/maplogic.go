@@ -51,6 +51,12 @@ const (
 	TerrainForest
 )
 
+type PlayerMove struct{
+	PlayerName string `json:"player_name"`
+	From []int `json:"from"`
+	To []int `json:"to"`
+}
+
 // Generate a random map with given sizeX and terrain probabilities
 //Terrain probabilities go in the order of Grass, Water, Mountain, Forest and should sum to 1.0
 func GenRandomMap(sizeY int, sizeX int, encounterProbability float64 ,terrainProbability []float64, name string) (Map,error){

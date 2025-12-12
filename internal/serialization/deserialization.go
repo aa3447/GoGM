@@ -2,15 +2,15 @@ package serialization
 
 import (
 	"encoding/json"
-	"os"
 	"fmt"
+	"os"
 
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/mapLogic"
-	player "home/aa3447/workspace/github.com/aa3447/GoGM/internal/playerLogic"
 )
 
+// JSONSafe is a constraint that includes types that can be serialized/deserialized to/from JSON.
 type JSONSafe interface{
-	mapLogic.Map | player.PlayerMove
+	mapLogic.Map | mapLogic.PlayerMove
 }
 
 // JSONTo deserializes JSON data into the specified type J.

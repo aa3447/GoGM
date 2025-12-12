@@ -3,7 +3,6 @@ package pubsub
 import (
 	"fmt"
 
-	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/mapLogic"
 	player "home/aa3447/workspace/github.com/aa3447/GoGM/internal/playerLogic"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/serialization"
 
@@ -37,7 +36,7 @@ func SetupExchanges() error{
 	}
 	err = channel.ExchangeDeclare(
 		MoveExchange,
-		"fanout",
+		"topic",
 		true,
 		false,
 		false,
@@ -55,7 +54,8 @@ func SetupExchanges() error{
 func QueueDeclareAndBindSetup(channel *ampq.Channel, player *player.Player) error{
 	mapQueueNewName := MapQueueNew + "_" + player.Name
 	mapQueueUpdateName := MapQueueUpdate + "_" + player.Name
-	moveQueueName := MoveQueue + "_" + player.Name
+	playerMoveQueueName := PlayerMoveQueue
+	GMMoveQueueName := GMMoveQueue
 	
 	mapQueueNew, err := channel.QueueDeclare(
 		mapQueueNewName,
@@ -79,8 +79,19 @@ func QueueDeclareAndBindSetup(channel *ampq.Channel, player *player.Player) erro
 	if err != nil{
 		return fmt.Errorf("failed to declare a queue: %v", err)
 	}
-	moveQueue, err := channel.QueueDeclare(
-		moveQueueName,
+	playerMoveQueue, err := channel.QueueDeclare(
+		playerMoveQueueName,
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil{
+		return fmt.Errorf("failed to declare a queue: %v", err)
+	}
+	gmMoveQueue, err := channel.QueueDeclare(
+		GMMoveQueueName,
 		true,
 		false,
 		false,
@@ -112,8 +123,18 @@ func QueueDeclareAndBindSetup(channel *ampq.Channel, player *player.Player) erro
 		return fmt.Errorf("failed to bind a queue: %v", err)
 	}
 	err = channel.QueueBind(
-		moveQueue.Name,
-		MoveRoutingKey,
+		playerMoveQueue.Name,
+		PlayerMoveRoutingKey,
+		MoveExchange,
+		false,
+		nil,
+	)
+	if err != nil{
+		return fmt.Errorf("failed to bind a queue: %v", err)
+	}
+	err = channel.QueueBind(
+		gmMoveQueue.Name,
+		GMMoveRoutingKey,
 		MoveExchange,
 		false,
 		nil,
@@ -125,10 +146,11 @@ func QueueDeclareAndBindSetup(channel *ampq.Channel, player *player.Player) erro
 	return nil
 }
 
-func PublishMapToQueue(channel *ampq.Channel, exchange, routingKey string, tileMap *mapLogic.Map) error{
-	mapJSON, err := serialization.ToJSON(*tileMap)
+// PublishToQueueAsJSON publishes the given data of type J to the specified exchange and routing key as a JSON message.
+func PublishToQueueAsJSON[J serialization.JSONSafe](channel *ampq.Channel, exchange, routingKey string, data *J) error{
+	JSONData, err := serialization.ToJSON(*data)
 	if err != nil{
-		return fmt.Errorf("failed to serialize map to JSON: %v", err)
+		return fmt.Errorf("failed to serialize to JSON: %v", err)
 	}
 
 	err = channel.Publish(
@@ -138,7 +160,7 @@ func PublishMapToQueue(channel *ampq.Channel, exchange, routingKey string, tileM
 		false,
 		ampq.Publishing{
 			ContentType: "application/json",
-			Body:	mapJSON,
+			Body:	JSONData,
 		},
 	)
 	if err != nil{

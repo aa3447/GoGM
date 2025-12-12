@@ -2,6 +2,7 @@ package gameLogic
 
 import (
 	"fmt"
+	"log"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/mapLogic"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/playerLogic"
 )
@@ -11,6 +12,7 @@ type Gamestate struct{
 	Maps []*mapLogic.Map
 	Players []*player.Player
 }
+
 
 func NewGamestateWithRandomMap(mapSizeY int, mapSizeX int ,encounterProbability float64 ,terrainProbability []float64, mapName string) (*Gamestate, error){
 	gameMap , err := mapLogic.GenRandomMap(mapSizeY, mapSizeX, encounterProbability, terrainProbability,mapName)
@@ -30,21 +32,27 @@ func NewGamestateWithExistingMap(existingMap *mapLogic.Map) *Gamestate{
 	}
 }
 
-func (gs *Gamestate) MovePlayer(player *player.Player ,deltaY int, deltaX int) error{
+func (gs *Gamestate) MovePlayer(player *player.Player ,deltaY int, deltaX int) (mapLogic.PlayerMove, error){
 	newY := player.PlayerPositionY + deltaY
 	newX := player.PlayerPositionX + deltaX
 	CurrentMapTiles := gs.CurrentMap.Tiles
 	if newY < 0 || newY >= len(CurrentMapTiles) || newX < 0 || newX >= len(CurrentMapTiles[0]){
-		fmt.Println("Cannot move out of bounds")
-		return nil // Out of bounds, ignore move
+		return mapLogic.PlayerMove{}, fmt.Errorf("cannot move out of bounds") // Out of bounds, ignore move
 	}
 	if !CurrentMapTiles[newY][newX].Walkable{
-		fmt.Println("Tile not walkable")
-		return nil // Tile not walkable, ignore move
+		return mapLogic.PlayerMove{},fmt.Errorf("tile not walkable") // Tile not walkable, ignore move
 	}
 	player.SetLocation(newY, newX)
 	CurrentMapTiles[newY][newX].VisibleOnMap = true
-	return nil
+
+	playerMove := mapLogic.PlayerMove{
+		PlayerName: player.Name,
+		From: []int{player.PlayerPositionY - deltaY, player.PlayerPositionX - deltaX},
+		To: []int{newY, newX},
+	}
+	log.Printf("Player Move: %+v\n", playerMove)
+
+	return playerMove,nil
 }
 
 

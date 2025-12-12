@@ -10,12 +10,16 @@ const (
 const (
 	MapNewRoutingKey  = "mapNewRoutingKey"
 	MapUpdateRoutingKey = "mapUpdateRoutingKey"
-	MoveRoutingKey = "moveRoutingKey"
+
+	PlayerMoveRoutingKey = "playerMoveRoutingKey"
+	GMMoveRoutingKey     = "gmMoveRoutingKey"
 )
 
 // RabbitMQ Queues
 const (
 	MapQueueNew       = "mapQueueNew"
 	MapQueueUpdate    = "mapQueueUpdate"
-	MoveQueue      = "moveQueue"
+
+	PlayerMoveQueue = "playerMoveQueue"
+	GMMoveQueue     = "gmMoveQueue"
 )

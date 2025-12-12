@@ -1,17 +1,17 @@
 package main
 
 import (
-	"fmt"
-	"os"
 	"errors"
+	"fmt"
+	"log"
+	"os"
 
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/gameLogic"
-	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/playerLogic"
-	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/serialization"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/io"
-	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/pubsub"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/mapLogic"
-
+	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/playerLogic"
+	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/pubsub"
+	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/serialization"
 
 	ampq "github.com/rabbitmq/amqp091-go"
 )
@@ -47,7 +47,7 @@ func main(){
 	go updateMaps(mapQueueUpdateSubscriber(channel, player), gameState)
 	
 	player.SetLocation(gameState.CurrentMap.EntranceLocation[0], gameState.CurrentMap.EntranceLocation[1])
-
+	
 	
 	fmt.Println("Welcome,", player.Name)
 	fmt.Println("You find yourself at the entrance of a mysterious location.")
@@ -59,7 +59,7 @@ func main(){
 		args := commands[1:]
 		switch command {
 			case "move":
-				handleMove(gameState,player,args)
+				handleMove(gameState,player,channel,args)
 			case "action":
 				//handleAction(args)
 			case "map":
@@ -75,26 +75,41 @@ func main(){
 }
 
 
-func handleMove(gs *gameLogic.Gamestate , player *player.Player ,args []string){
+func handleMove(gs *gameLogic.Gamestate , player *player.Player, channel *ampq.Channel ,args []string){
 	if len(args) < 1{
 		fmt.Println("Move where?")
 		return
 	}
+	var playerMove mapLogic.PlayerMove
+	var err error
+
 	direction := args[0]
 	fmt.Println("Moving", direction)
 
 	switch direction{
 		case "north", "up":
-			gs.MovePlayer(player,-1, 0)
+			playerMove, err = gs.MovePlayer(player,-1, 0)
 		case "south", "down":
-			gs.MovePlayer(player,1, 0)
+			playerMove, err = gs.MovePlayer(player,1, 0)
 		case "east", "right":
-			gs.MovePlayer(player,0, 1)
+			playerMove, err = gs.MovePlayer(player,0, 1)
 		case "west", "left":
-			gs.MovePlayer(player,0, -1)
+			playerMove, err = gs.MovePlayer(player,0, -1)
 		default:
 			fmt.Println("Unknown direction:", direction)
 	}
+
+	if (err == nil) {
+		err = pubsub.PublishToQueueAsJSON(channel, pubsub.MoveExchange, pubsub.PlayerMoveRoutingKey, &playerMove)
+		if err != nil{
+			log.Printf("Failed to publish move: %v\n", err)
+			return
+		}
+		fmt.Println("Moved", direction)
+		return
+	}
+
+	fmt.Printf("Failed to move: %v\n", err)
 }
 
 func addNewMaps(newMapsChan chan *mapLogic.Map, gs *gameLogic.Gamestate){
@@ -125,7 +140,8 @@ func mapQueueNewSubscriber(channel *ampq.Channel, player *player.Player) chan *m
 	newMaps := make(chan *mapLogic.Map)
 	queueName := pubsub.MapQueueNew + "_" + player.Name
 
-	msgs, err := pubsub.SubscribeToMapQueue(channel, queueName)
+	subscribeArgs := []bool{true, false, false, false}
+	msgs, err := pubsub.SubscribeToQueue(channel, queueName, subscribeArgs, subscribeArgs)
 	if err != nil{
 		fmt.Println("Error subscribing to map queue:", err)
 		return nil
@@ -139,6 +155,7 @@ func mapQueueNewSubscriber(channel *ampq.Channel, player *player.Player) chan *m
 				continue
 			}
 			_,err = os.Stat("./playerClient/map/" + currentMap.Name + ".json")
+
 			if errors.Is(err, os.ErrNotExist) {
 				err = serialization.SaveToFile(*currentMap, "player" ,"map" ,currentMap.Name)
 				//err = serialization.SaveMapToFile(currentMap, "player", player.Name)
@@ -158,7 +175,8 @@ func mapQueueUpdateSubscriber(channel *ampq.Channel, player *player.Player) chan
 	updateMaps := make(chan *mapLogic.Map)
 	queueName := pubsub.MapQueueUpdate + "_" + player.Name
 
-	msgs, err := pubsub.SubscribeToMapQueue(channel, queueName)
+	subscribeArgs := []bool{true, false, false, false}
+	msgs, err := pubsub.SubscribeToQueue(channel, queueName, subscribeArgs, subscribeArgs)
 	if err != nil{
 		fmt.Println("Error subscribing to map queue:", err)
 		return nil
