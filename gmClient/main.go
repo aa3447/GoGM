@@ -47,7 +47,7 @@ func main(){
 	}
 
 	players := []*GM.Player{}
-	testPlayer := GM.NewPlayer("Hero", "The brave adventurer", "Warrior")
+	testPlayer := GM.NewPlayer("Hero", "The brave adventurer", "Warrior", "assign", []int{15,14,13,12,10,8})
 	testPlayer.SetLocation(gameState.CurrentMap.EntranceLocation[0] ,gameState.CurrentMap.EntranceLocation[1])
 	players = append(players, testPlayer)
 	go playerMoveSubscriber(players, channel, gameState)
@@ -127,6 +127,7 @@ func playerMoveSubscriber(players []*GM.Player,channel *ampq.Channel, gameState 
 					continue
 				}
 				fmt.Printf("Processed move for player %s to (%d, %d)\n", playerMove.PlayerName, playerMove.To[0], playerMove.To[1])
+				pubsub.PublishToQueueAsJSON(channel, pubsub.MoveExchange, pubsub.GMMoveRoutingKey, playerMove)
 			}
 		}
 	}

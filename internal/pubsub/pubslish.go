@@ -55,7 +55,7 @@ func QueueDeclareAndBindSetup(channel *ampq.Channel, player *player.Player) erro
 	mapQueueNewName := MapQueueNew + "_" + player.Name
 	mapQueueUpdateName := MapQueueUpdate + "_" + player.Name
 	playerMoveQueueName := PlayerMoveQueue
-	GMMoveQueueName := GMMoveQueue
+	GMMoveQueueName := GMMoveQueue + "_" + player.Name
 	
 	mapQueueNew, err := channel.QueueDeclare(
 		mapQueueNewName,

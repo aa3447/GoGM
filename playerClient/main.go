@@ -31,7 +31,7 @@ func main(){
 	}
 	defer channel.Close()
 
-	player := player.NewPlayer("Hero", "The brave adventurer", "Warrior")
+	player := player.NewPlayer("Hero", "The brave adventurer", "Warrior", "roll")
 	//player := player.NewPlayer(io.GetInput()[0], "The brave adventurer", "Warrior")
 
 	err = pubsub.QueueDeclareAndBindSetup(channel, player)
@@ -45,6 +45,7 @@ func main(){
 	gameState := gameLogic.NewGamestateWithExistingMap(<-newMaps)
 	go addNewMaps(newMaps, gameState)
 	go updateMaps(mapQueueUpdateSubscriber(channel, player), gameState)
+	go moveSubscriber(channel, player, gameState)
 	
 	player.SetLocation(gameState.CurrentMap.EntranceLocation[0], gameState.CurrentMap.EntranceLocation[1])
 	
@@ -204,4 +205,26 @@ func mapQueueUpdateSubscriber(channel *ampq.Channel, player *player.Player) chan
 		}
 	}()
 	return updateMaps
+}
+
+func moveSubscriber(channel *ampq.Channel, player *player.Player, gameState *gameLogic.Gamestate){
+	subscribeArgs := []bool{true, false, false, false}
+	msgs, err := pubsub.SubscribeToQueue(channel, pubsub.GMMoveQueue, subscribeArgs, subscribeArgs)
+	if err != nil{
+		log.Println("Error subscribing to GM move queue:", err)
+		return
+	}
+
+	for d := range msgs{
+		playerMove ,err := serialization.JSONTo(d.Body, mapLogic.PlayerMove{})
+		if err != nil{
+			log.Println("Error deserializing player move:", err)
+			continue
+		}
+		for _, p := range gameState.Players{
+			if p.Name != player.Name && p.Name == playerMove.PlayerName{
+				gameState.MovePlayer(p, playerMove.To[0]-playerMove.From[0], playerMove.To[1]-playerMove.From[1])
+			}
+		}
+	}
 }
