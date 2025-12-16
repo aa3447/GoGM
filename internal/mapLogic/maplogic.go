@@ -6,8 +6,10 @@ import (
 	"math"
 	"math/rand"
 	"slices"
+	"log"
 
 	player "home/aa3447/workspace/github.com/aa3447/GoGM/internal/playerLogic"
+	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/gameLogic"
 )
 
 type NPC struct{
@@ -41,6 +43,8 @@ type Map struct{
 	EntranceLocation []int `json:"entrance_location,omitempty"`
 	ExitLocation []int `json:"exit_location,omitempty"`
 	FileLocation string `json:"file_location,omitempty"`
+	GameState *gameLogic.Gamestate `json:"-"`
+
 }
 
 type Terrain int
@@ -303,4 +307,27 @@ func (m *Map) PrintMapWithPlayers(players []*player.Player){
 		}
 		fmt.Println()
 	}
+}
+
+func (m *Map) MovePlayer(player *player.Player ,deltaY int, deltaX int) (PlayerMove, error){
+	newY := player.PlayerPositionY + deltaY
+	newX := player.PlayerPositionX + deltaX
+	MapTiles := m.Tiles
+	if newY < 0 || newY >= len(MapTiles) || newX < 0 || newX >= len(MapTiles[0]){
+		return PlayerMove{}, fmt.Errorf("cannot move out of bounds") // Out of bounds, ignore move
+	}
+	if !MapTiles[newY][newX].Walkable{
+		return PlayerMove{},fmt.Errorf("tile not walkable") // Tile not walkable, ignore move
+	}
+	player.SetLocation(newY, newX)
+	MapTiles[newY][newX].VisibleOnMap = true
+
+	playerMove := PlayerMove{
+		PlayerName: player.Name,
+		From: []int{player.PlayerPositionY - deltaY, player.PlayerPositionX - deltaX},
+		To: []int{newY, newX},
+	}
+	log.Printf("Player Move: %+v\n", playerMove)
+
+	return playerMove,nil
 }

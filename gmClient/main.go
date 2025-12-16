@@ -2,13 +2,16 @@ package main
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 
-	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/gameLogic"
+	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/campaign"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/io"
-	GM "home/aa3447/workspace/github.com/aa3447/GoGM/internal/playerLogic"
-	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/serialization"
-	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/pubsub"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/mapLogic"
+	GM "home/aa3447/workspace/github.com/aa3447/GoGM/internal/playerLogic"
+	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/pubsub"
+	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/serialization"
+
 	ampq "github.com/rabbitmq/amqp091-go"
 )
 
@@ -28,19 +31,21 @@ func main(){
 	}
 	defer channel.Close()
 
-	gameState , err := gameLogic.NewGamestateWithRandomMap(10, 10, 0.2, []float64{0.5, 0.2, 0.2, 0.1},"")
-	if err != nil{
-		fmt.Println("Error creating game state:", err)
-		return
-	}
 	err = pubsub.SetupExchanges()
 	if err != nil{
 		fmt.Println("Error starting pubsub:", err)
 		return
 	}
-	currentMap := gameState.CurrentMap
-	
-	err = serialization.SaveToFile(*currentMap, "gm" ,"map" ,currentMap.Name)
+
+	campaign := campaign.NewCampaign("Test Campaign", "A test campaign for GoGM", GM.NewGM("GameMaster", "The overseer of the game world"))
+
+	cMap , err := campaign.NewGamestateWithRandomMap(10, 10, 0.2, []float64{0.5, 0.2, 0.2, 0.1},"")
+	if err != nil{
+		fmt.Println("Error creating game state:", err)
+		return
+	}
+
+	err = serialization.SaveToFile(*cMap, "gm" ,"map" ,cMap.Name)
 	if err != nil{
 		fmt.Println("Error creating game state:", err)
 		return
@@ -48,9 +53,9 @@ func main(){
 
 	players := []*GM.Player{}
 	testPlayer := GM.NewPlayer("Hero", "The brave adventurer", "Warrior", "assign", []int{15,14,13,12,10,8})
-	testPlayer.SetLocation(gameState.CurrentMap.EntranceLocation[0] ,gameState.CurrentMap.EntranceLocation[1])
+	testPlayer.SetLocation(cMap.EntranceLocation[0] ,cMap.EntranceLocation[1])
 	players = append(players, testPlayer)
-	go playerMoveSubscriber(players, channel, gameState)
+	go playerMoveSubscriber(players, channel, cMap)
 
 	gm := GM.NewGM("GameMaster", "The overseer of the game world")
 	
@@ -60,10 +65,29 @@ func main(){
 
 	commands := io.GetInput()
 	for {
+		switch commands[0] {
+			case "campaign":
+			case "play":
+				gameLoop(cMap, channel)
+			case "quit":
+				fmt.Println("Quitting game.")
+				return
+			default:
+				fmt.Println("Unknown command:", commands[0])
+		}
+		commands = io.GetInput()			
+	}
+
+}
+
+func gameLoop(m *mapLogic.Map, channel *ampq.Channel){
+	commands := io.GetInput()
+	currentPlayers := slices.Collect(maps.Values(m.GameState.Players))
+	for {
 		command := commands[0]
 		switch command {
 			case "map":
-				currentMap.PrintMapDebugWithPlayers(players)
+				m.PrintMapDebugWithPlayers(currentPlayers)
 			case "send":
 				if len(commands) < 2{
 					fmt.Println("Specify what to send: 'map'")
@@ -72,7 +96,7 @@ func main(){
 				}
 				switch commands[1]{
 					case "map":
-						pubsub.PublishToQueueAsJSON(channel, pubsub.MapExchange, pubsub.MapNewRoutingKey, currentMap)
+						pubsub.PublishToQueueAsJSON(channel, pubsub.MapExchange, pubsub.MapNewRoutingKey, m)
 						fmt.Println("Map sent to players.")
 					default:
 						fmt.Println("Unknown send command:", commands[0])
@@ -87,7 +111,7 @@ func main(){
 				}
 				switch commands[1]{
 					case "map":
-						pubsub.PublishToQueueAsJSON(channel, pubsub.MapExchange, pubsub.MapUpdateRoutingKey, currentMap)
+						pubsub.PublishToQueueAsJSON(channel, pubsub.MapExchange, pubsub.MapUpdateRoutingKey, m)
 						fmt.Println("Map update sent to players.")
 					default:
 						fmt.Println("Unknown update command:", commands[0])
@@ -102,10 +126,9 @@ func main(){
 		}
 		commands = io.GetInput()
 	}
-
 }
 
-func playerMoveSubscriber(players []*GM.Player,channel *ampq.Channel, gameState *gameLogic.Gamestate) {
+func playerMoveSubscriber(players []*GM.Player,channel *ampq.Channel, m *mapLogic.Map) {
 	subscribeArgs := []bool{true, false, false, false}
 	msgs, err := pubsub.SubscribeToQueue(channel, pubsub.PlayerMoveQueue, subscribeArgs, subscribeArgs)
 	if err != nil{
@@ -121,7 +144,7 @@ func playerMoveSubscriber(players []*GM.Player,channel *ampq.Channel, gameState 
 		}
 		for _, player := range players{
 			if player.Name == playerMove.PlayerName{
-				_ ,err = gameState.MovePlayer(player, playerMove.To[0]  - playerMove.From[0], playerMove.To[1] -  playerMove.From[1])
+				_ ,err = m.MovePlayer(player, playerMove.To[0]  - playerMove.From[0], playerMove.To[1] -  playerMove.From[1])
 				if err != nil{
 					fmt.Println("Error applying player move:", err)
 					continue

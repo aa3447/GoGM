@@ -6,10 +6,10 @@ import (
 	"log"
 	"os"
 
-	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/gameLogic"
+	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/campaign"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/io"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/mapLogic"
-	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/playerLogic"
+	player "home/aa3447/workspace/github.com/aa3447/GoGM/internal/playerLogic"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/pubsub"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/serialization"
 
@@ -31,26 +31,30 @@ func main(){
 	}
 	defer channel.Close()
 
-	player := player.NewPlayer("Hero", "The brave adventurer", "Warrior", "roll")
+	newPlayer := player.NewPlayer("Hero", "The brave adventurer", "Warrior", "roll")
 	//player := player.NewPlayer(io.GetInput()[0], "The brave adventurer", "Warrior")
 
-	err = pubsub.QueueDeclareAndBindSetup(channel, player)
+	err = pubsub.QueueDeclareAndBindSetup(channel, newPlayer)
 	if err != nil{
 		fmt.Println("Error declaring and binding queues:", err)
 		return
 	}
+
+	newMaps := mapQueueNewSubscriber(channel, newPlayer)
+	campaign := campaign.NewCampaign("Player Campaign", "A player campaign for GoGM", player.GM{})
+	cMAp, err := campaign.NewGamestateWithExistingMap(<-newMaps)
+	if err != nil{
+		fmt.Println("Error creating game state:", err)
+		return
+	}
+
+	go addNewMaps(newMaps, campaign)
+	go updateMaps(mapQueueUpdateSubscriber(channel, newPlayer), campaign)
+	go moveSubscriber(channel, newPlayer, cMAp)
+
+	newPlayer.SetLocation(cMAp.EntranceLocation[0], cMAp.EntranceLocation[1])
 	
-	newMaps := mapQueueNewSubscriber(channel,player)
-	
-	gameState := gameLogic.NewGamestateWithExistingMap(<-newMaps)
-	go addNewMaps(newMaps, gameState)
-	go updateMaps(mapQueueUpdateSubscriber(channel, player), gameState)
-	go moveSubscriber(channel, player, gameState)
-	
-	player.SetLocation(gameState.CurrentMap.EntranceLocation[0], gameState.CurrentMap.EntranceLocation[1])
-	
-	
-	fmt.Println("Welcome,", player.Name)
+	fmt.Println("Welcome,", newPlayer.Name)
 	fmt.Println("You find yourself at the entrance of a mysterious location.")
 	fmt.Println("Type 'move <direction>' to move (north, south, east, west), 'map' to view the map, or 'quit' to exit.")
 	
@@ -60,11 +64,11 @@ func main(){
 		args := commands[1:]
 		switch command {
 			case "move":
-				handleMove(gameState,player,channel,args)
+				handleMove(cMAp, newPlayer, channel, args)
 			case "action":
 				//handleAction(args)
 			case "map":
-				gameState.CurrentMap.PrintMapWithPlayer(player)
+				cMAp.PrintMapWithPlayer(newPlayer)
 			case "quit":
 				fmt.Println("Quitting game.")
 				return
@@ -76,7 +80,7 @@ func main(){
 }
 
 
-func handleMove(gs *gameLogic.Gamestate , player *player.Player, channel *ampq.Channel ,args []string){
+func handleMove(m *mapLogic.Map, player *player.Player, channel *ampq.Channel ,args []string){
 	if len(args) < 1{
 		fmt.Println("Move where?")
 		return
@@ -89,13 +93,13 @@ func handleMove(gs *gameLogic.Gamestate , player *player.Player, channel *ampq.C
 
 	switch direction{
 		case "north", "up":
-			playerMove, err = gs.MovePlayer(player,-1, 0)
+			playerMove, err = m.MovePlayer(player,-1, 0)
 		case "south", "down":
-			playerMove, err = gs.MovePlayer(player,1, 0)
+			playerMove, err = m.MovePlayer(player,1, 0)
 		case "east", "right":
-			playerMove, err = gs.MovePlayer(player,0, 1)
+			playerMove, err = m.MovePlayer(player,0, 1)
 		case "west", "left":
-			playerMove, err = gs.MovePlayer(player,0, -1)
+			playerMove, err = m.MovePlayer(player,0, -1)
 		default:
 			fmt.Println("Unknown direction:", direction)
 	}
@@ -113,23 +117,20 @@ func handleMove(gs *gameLogic.Gamestate , player *player.Player, channel *ampq.C
 	fmt.Printf("Failed to move: %v\n", err)
 }
 
-func addNewMaps(newMapsChan chan *mapLogic.Map, gs *gameLogic.Gamestate){
+func addNewMaps(newMapsChan chan *mapLogic.Map, c *campaign.Campaign){
 	for newMaps := range newMapsChan{
 		newMap := newMaps
-		gs.AddMap(newMap)
+		c.AddMap(newMap)
 		fmt.Println("New map added:", newMap.Name)
 	}
 }
 
-func updateMaps(updateMapsChan chan *mapLogic.Map, gs *gameLogic.Gamestate){
+func updateMaps(updateMapsChan chan *mapLogic.Map, c *campaign.Campaign){
 	for updateMaps := range updateMapsChan{
 		updatedMap := updateMaps
-		for i, existingMap := range gs.Maps{
+		for i, existingMap := range c.Maps{
 			if existingMap.Name == updatedMap.Name{
-				gs.Maps[i] = updatedMap
-				if gs.CurrentMap.Name == updatedMap.Name{
-					gs.CurrentMap = updatedMap
-				}
+				c.Maps[i] = updatedMap
 				break
 			}
 		}
@@ -207,7 +208,7 @@ func mapQueueUpdateSubscriber(channel *ampq.Channel, player *player.Player) chan
 	return updateMaps
 }
 
-func moveSubscriber(channel *ampq.Channel, player *player.Player, gameState *gameLogic.Gamestate){
+func moveSubscriber(channel *ampq.Channel, player *player.Player, m *mapLogic.Map) {
 	subscribeArgs := []bool{true, false, false, false}
 	msgs, err := pubsub.SubscribeToQueue(channel, pubsub.GMMoveQueue, subscribeArgs, subscribeArgs)
 	if err != nil{
@@ -221,9 +222,9 @@ func moveSubscriber(channel *ampq.Channel, player *player.Player, gameState *gam
 			log.Println("Error deserializing player move:", err)
 			continue
 		}
-		for _, p := range gameState.Players{
+		for _, p := range m.GameState.Players{
 			if p.Name != player.Name && p.Name == playerMove.PlayerName{
-				gameState.MovePlayer(p, playerMove.To[0]-playerMove.From[0], playerMove.To[1]-playerMove.From[1])
+				m.MovePlayer(p, playerMove.To[0]-playerMove.From[0], playerMove.To[1]-playerMove.From[1])
 			}
 		}
 	}
