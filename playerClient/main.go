@@ -31,44 +31,31 @@ func main(){
 	}
 	defer channel.Close()
 
+	var currentCampaign *campaign.Campaign
+
 	newPlayer := player.NewPlayer("Hero", "The brave adventurer", "Warrior", "roll")
 	//player := player.NewPlayer(io.GetInput()[0], "The brave adventurer", "Warrior")
 
-	err = pubsub.QueueDeclareAndBindSetup(channel, newPlayer)
-	if err != nil{
-		fmt.Println("Error declaring and binding queues:", err)
-		return
-	}
-
-	newMaps := mapQueueNewSubscriber(channel, newPlayer)
-	campaign := campaign.NewCampaign("Player Campaign", "A player campaign for GoGM", player.GM{})
-	cMAp, err := campaign.NewGamestateWithExistingMap(<-newMaps)
-	if err != nil{
-		fmt.Println("Error creating game state:", err)
-		return
-	}
-
-	go addNewMaps(newMaps, campaign)
-	go updateMaps(mapQueueUpdateSubscriber(channel, newPlayer), campaign)
-	go moveSubscriber(channel, newPlayer, cMAp)
-
-	newPlayer.SetLocation(cMAp.EntranceLocation[0], cMAp.EntranceLocation[1])
-	
-	fmt.Println("Welcome,", newPlayer.Name)
-	fmt.Println("You find yourself at the entrance of a mysterious location.")
-	fmt.Println("Type 'move <direction>' to move (north, south, east, west), 'map' to view the map, or 'quit' to exit.")
-	
 	commands := io.GetInput()
 	for {
 		command := commands[0]
-		args := commands[1:]
 		switch command {
-			case "move":
-				handleMove(cMAp, newPlayer, channel, args)
-			case "action":
-				//handleAction(args)
-			case "map":
-				cMAp.PrintMapWithPlayer(newPlayer)
+			case "manage":
+				currentCampaign, newPlayer, err = managementLoop(channel)
+				if err != nil {
+					fmt.Println("Error in management loop:", err)
+					return
+				}
+			case "play":
+				if currentCampaign == nil{
+					fmt.Println("Please join a campaign first.")
+					continue
+				}
+				if newPlayer == nil{
+					fmt.Println("Please create a player first.")
+					continue
+				}
+				gameLoop(channel, newPlayer, currentCampaign)
 			case "quit":
 				fmt.Println("Quitting game.")
 				return
@@ -79,6 +66,123 @@ func main(){
 	}
 }
 
+func managementLoop(channel *ampq.Channel) (*campaign.Campaign, *player.Player, error){
+	fmt.Println("Entering management loop. Type 'quit' to exit.")
+	var currentPlayer *player.Player
+
+	currentCampaign := campaign.NewCampaign("Player Campaign", "A player campaign for GoGM", player.GM{})
+
+	commands := io.GetInput()
+	for {
+		command := commands[0]
+		switch command {
+			case "create":
+				currentPlayer = createPlayer()
+			case "update":
+				//handleUpdate(args)
+			case "load":
+				//handleLoad(args)
+			case "delete":
+				//handleDelete(args)
+			case "list":
+				//handleList(args)
+			case "join":
+				//handleJoin(args)
+			case "quit":
+				if currentPlayer == nil{
+					fmt.Println("Please create a player first.")
+					continue
+				}
+				if currentCampaign == nil{
+					fmt.Println("Please join a campaign first.")
+					continue
+				}
+				
+				fmt.Println("Exiting management loop.")
+				err := pubsub.QueueDeclareAndBindSetup(channel, currentPlayer)	
+				if err != nil{
+					fmt.Println("Error declaring and binding queues:", err)
+					return nil, nil, err
+				}	
+				return currentCampaign, currentPlayer, nil
+			default:
+				fmt.Println("Unknown command:", command)
+		}
+		commands = io.GetInput()
+	}
+}
+
+func createPlayer() *player.Player{
+	fmt.Println("Creating new player.")
+	fmt.Print("Enter player name: ")
+	name := io.GetInput()[0]
+	fmt.Print("Enter player description: ")
+	description := io.GetInput()[0]
+	fmt.Print("Enter player background: ")
+	background := io.GetInput()[0]
+	fmt.Print("Enter stat generation method (roll, buy, assign): ")
+	statMethod := io.GetInput()[0]
+	var stats []int
+	if statMethod == "assign"{
+		fmt.Print("Enter stats as space-separated integers (Str Dex Int Con Cha Wis): ")
+		statInputs := io.GetInput()
+		for _, s := range statInputs{
+			var stat int
+			fmt.Sscanf(s, "%d", &stat)
+			stats = append(stats, stat)
+		}
+	}
+	player := player.NewPlayer(name, description, background, statMethod, stats)
+	fmt.Println("Player created:", player.Name)
+	return player
+}
+
+func gameLoop(channel *ampq.Channel, pl *player.Player, campaign *campaign.Campaign){
+	fmt.Println("Entering game loop. Type 'quit' to exit.")
+	fmt.Println("Welcome,", pl.Name)
+	fmt.Println("You find yourself at the entrance of a mysterious location.")
+	fmt.Println("Type 'move <direction>' to move (north, south, east, west), 'map' to view the map, or 'quit' to exit.")
+
+	currentMap := playSubscribers(channel, pl, campaign)
+
+	commands := io.GetInput()
+	for {
+		command := commands[0]
+		args := commands[1:]
+		switch command {
+			case "move":
+				handleMove(currentMap, pl, channel, args)
+			case "action":
+				//handleAction(args)
+			case "map":
+				currentMap.PrintMapWithPlayer(pl)
+			case "quit":
+				fmt.Println("Quitting game.")
+				return
+			default:
+				fmt.Println("Unknown command:", command)
+		}
+		commands = io.GetInput()
+	}
+}
+
+func playSubscribers(channel *ampq.Channel, pl *player.Player, campaign *campaign.Campaign) *mapLogic.Map{
+	newMaps := mapQueueNewSubscriber(channel, pl)
+	cMAp, err := campaign.NewGamestateWithExistingMap(<-newMaps)
+	
+	if err != nil{
+		fmt.Println("Error creating game state:", err)
+		return &mapLogic.Map{}
+	}
+
+	go addNewMaps(newMaps, campaign)
+	go updateMaps(mapQueueUpdateSubscriber(channel, pl), campaign)
+	go moveSubscriber(channel, pl, cMAp)
+
+	pl.SetLocation(cMAp.EntranceLocation[0], cMAp.EntranceLocation[1])
+
+	return cMAp
+}
 
 func handleMove(m *mapLogic.Map, player *player.Player, channel *ampq.Channel ,args []string){
 	if len(args) < 1{
