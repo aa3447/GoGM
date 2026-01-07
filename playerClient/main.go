@@ -32,9 +32,7 @@ func main(){
 	defer channel.Close()
 
 	var currentCampaign *campaign.Campaign
-
-	newPlayer := player.NewPlayer("Hero", "The brave adventurer", "Warrior", "roll")
-	//player := player.NewPlayer(io.GetInput()[0], "The brave adventurer", "Warrior")
+	var newPlayer *player.Player
 
 	commands := io.GetInput()
 	for {
@@ -70,6 +68,8 @@ func managementLoop(channel *ampq.Channel) (*campaign.Campaign, *player.Player, 
 	fmt.Println("Entering management loop. Type 'quit' to exit.")
 	var currentPlayer *player.Player
 
+	currentPlayer = player.NewPlayer("Hero", "The brave adventurer", "Warrior", "roll")
+	//player := player.NewPlayer(io.GetInput()[0], "The brave adventurer", "Warrior")
 	currentCampaign := campaign.NewCampaign("Player Campaign", "A player campaign for GoGM", player.GM{})
 
 	commands := io.GetInput()
@@ -138,7 +138,7 @@ func createPlayer() *player.Player{
 }
 
 func gameLoop(channel *ampq.Channel, pl *player.Player, campaign *campaign.Campaign){
-	fmt.Println("Entering game loop. Type 'quit' to exit.")
+	log.Println("Entering game loop.")
 	fmt.Println("Welcome,", pl.Name)
 	fmt.Println("You find yourself at the entrance of a mysterious location.")
 	fmt.Println("Type 'move <direction>' to move (north, south, east, west), 'map' to view the map, or 'quit' to exit.")

@@ -66,7 +66,10 @@ func main(){
 	commands := io.GetInput()
 	for {
 		switch commands[0] {
+			case "load":
+				// Implement load logic here
 			case "campaign":
+				// Implement campaign logic here
 			case "play":
 				gameLoop(cMap, channel)
 			case "quit":
@@ -78,6 +81,52 @@ func main(){
 		commands = io.GetInput()			
 	}
 
+}
+
+func campaignManagementLoop(channel *ampq.Channel) (*campaign.Campaign, error){
+	fmt.Println("Entering campaign management loop. Type 'quit' to exit.")
+	currentCampaign := campaign.NewCampaign("GM Campaign", "A GM campaign for GoGM", GM.NewGM("GameMaster", "The overseer of the game world"))
+
+	commands := io.GetInput()
+	for {
+		command := commands[0]
+		args := commands[1:]
+		switch command {
+			case "create_map":
+				switch args[0] {
+				case "random":
+					newMap, err := mapLogic.GenRandomMap(10, 10, 0.2, []float64{0.5, 0.2, 0.2, 0.1},"")
+					if err != nil {
+						fmt.Println("Error creating random map:", err)
+						continue
+					}
+					currentCampaign.AddMap(&newMap)
+					fmt.Println("Random map created and added to campaign.")
+				case "editor":
+					// Implement map editor here
+				default:
+					fmt.Println("Unknown create_map argument:", args)
+				}
+			case "update_map":
+				// Implement map update logic here
+			case "load_map":
+				// Implement map loading logic here
+			case "add_player":
+				// Implement player addition logic here
+			case "remove_player":
+				// Implement player removal logic here
+			case "add_npc":
+				// Implement NPC addition logic here
+			case "remove_npc":
+				// Implement NPC removal logic here
+			case "quit":
+				fmt.Println("Exiting campaign management loop.")
+				return currentCampaign, nil
+			default:
+				fmt.Println("Unknown command:", command)
+		}
+		commands = io.GetInput()
+	}
 }
 
 func gameLoop(m *mapLogic.Map, channel *ampq.Channel){
