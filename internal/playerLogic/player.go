@@ -33,6 +33,7 @@ type PlayerAttributes struct{
 	Wisdom int
 }
 
+// NewPlayer creates a new Player with the specified name, description, background, and stat generation method.
 func NewPlayer(name, description, background, statMethod string, args ...[]int) *Player{
 	var stats []int
 
@@ -70,6 +71,7 @@ func NewPlayer(name, description, background, statMethod string, args ...[]int) 
 	return player
 }
 
+// statMethodRoll generates stats by rolling 4d6 and dropping the lowest die for each of the 6 attributes.
 func statMethodRoll() []int{
 	stats := make([]int, 6)
 	for i := range 6{
@@ -89,6 +91,7 @@ func statMethodRoll() []int{
 	return stats
 }
 
+// statAssign assigns the generated stats to the player's attributes based on user input.
 func statAssign(p *Player, stats []int){
 	var choice int
 	var choicesMade = make(map[int]bool)

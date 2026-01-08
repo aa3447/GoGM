@@ -6,12 +6,14 @@ import (
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/playerLogic"
 )
 
+// Campaign represents a game campaign managed by a Game Master (GM).
 type Campaign struct {
-	Name string
-	Description string
-	GM playerLogic.GM
-	Players map[string]*playerLogic.Player
-	Maps map[string]*mapLogic.Map
+	Name string `json:"name"`
+	Description string `json:"description"`
+	GM playerLogic.GM `json:"gm"`
+	Players map[string]*playerLogic.Player `json:"players"`
+	Maps map[string]*mapLogic.Map `json:"maps"`
+	CurrentMap *mapLogic.Map `json:"current_map,omitempty"`
 }
 
 func NewCampaign(name string, description string, gm playerLogic.GM) *Campaign{

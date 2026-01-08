@@ -7,6 +7,7 @@ import (
 )
 
 
+// ToJSON serializes the given data of type J to JSON.
 func ToJSON[J JSONSafe](data J) ([]byte, error){
 	jsonData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil{

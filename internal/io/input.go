@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// GetInput reads a line of input from the standard input and returns it as a slice of strings.
 func GetInput() []string{
 	fmt.Print("> ")
 	scanner := bufio.NewScanner(os.Stdin)

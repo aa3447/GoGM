@@ -130,6 +130,7 @@ func GenRandomMap(sizeY int, sizeX int, encounterProbability float64 ,terrainPro
 	return newMap, nil
 }
 
+// generateEntranceAndExit randomly places entrance and exit points on the map edges
 func generateEntranceAndExit(tileMap [][]Tile) []int{
 	sizeY := len(tileMap)
 	sizeX := len(tileMap[0])
@@ -176,6 +177,7 @@ func generateEntranceAndExit(tileMap [][]Tile) []int{
 	return  entranceAndExitLocation
 }
 
+// PrintMap prints the map to the console, showing only visible tiles.
 func (m *Map) PrintMap(){
 	tileMap := m.Tiles
 	for _,row := range tileMap{
@@ -199,6 +201,7 @@ func (m *Map) PrintMap(){
 	}
 }
 
+// PrintMapDebug prints the entire map to the console, showing all tiles regardless of visibility.
 func (m *Map) PrintMapDebug(){
 	tileMap := m.Tiles
 	for _,row := range tileMap{
@@ -218,6 +221,7 @@ func (m *Map) PrintMapDebug(){
 	}
 }
 
+// PrintMapDebugWithPlayers prints the entire map to the console, showing all tiles and player positions.
 func (m *Map) PrintMapDebugWithPlayers(players []*player.Player){
 	tileMap := m.Tiles
 	for rowIndex, row := range tileMap{
@@ -249,6 +253,7 @@ func (m *Map) PrintMapDebugWithPlayers(players []*player.Player){
 	}
 }
 
+// PrintMapWithPlayer prints the map to the console, showing only visible tiles and the specified player's position.
 func (m *Map) PrintMapWithPlayer(player *player.Player){
 	playerY, playerX := player.GetPlayerPosition()
 	tileMap := m.Tiles
@@ -275,7 +280,7 @@ func (m *Map) PrintMapWithPlayer(player *player.Player){
 	}
 }
 
-
+// PrintMapWithPlayers prints the map to the console, showing only visible tiles and the players position.
 func (m *Map) PrintMapWithPlayers(players []*player.Player){
 	tileMap := m.Tiles
 	for rowIndex, row := range tileMap{
@@ -309,6 +314,7 @@ func (m *Map) PrintMapWithPlayers(players []*player.Player){
 	}
 }
 
+// MovePlayer attempts to move the player by deltaY and deltaX. Returns a PlayerMove struct and error if move is invalid.
 func (m *Map) MovePlayer(player *player.Player ,deltaY int, deltaX int) (PlayerMove, error){
 	newY := player.PlayerPositionY + deltaY
 	newX := player.PlayerPositionX + deltaX

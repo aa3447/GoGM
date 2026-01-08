@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"os"
 
+	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/campaign"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/mapLogic"
 )
 
 // JSONSafe is a constraint that includes types that can be serialized/deserialized to/from JSON.
 type JSONSafe interface{
-	mapLogic.Map | mapLogic.PlayerMove
+	mapLogic.Map | mapLogic.PlayerMove | campaign.Campaign
 }
 
 // JSONTo deserializes JSON data into the specified type J.
