@@ -37,7 +37,7 @@ func main(){
 		return
 	}
 
-	var campaign *campaign.Campaign
+	var gameCampaign *campaign.Campaign
 
 	gm := GM.NewGM("GameMaster", "The overseer of the game world")
 	
@@ -47,11 +47,18 @@ func main(){
 
 	commands := io.GetInput()
 	for {
-		switch commands[0] {
+		command := commands[0]
+		args := commands[1:]
+		switch command {
 			case "load":
-				
+				gameCampaign, err := serialization.LoadFromJSONFile("gm", "campaigns", args[0], campaign.Campaign{})
+				if err != nil{
+					fmt.Println("Error loading campaign:", err)
+					continue
+				}
+				fmt.Println("Campaign loaded:", gameCampaign.Name)
 			case "campaign":
-				campaign, err = campaignManagementLoop(channel)
+				gameCampaign, err = campaignManagementLoop(channel)
 				if err != nil{
 					fmt.Println("Error in campaign management loop:", err)
 					return
@@ -59,10 +66,10 @@ func main(){
 			case "play":
 				players := []*GM.Player{}
 				// change to connected players for gamestate :todo:
-				for _, player := range campaign.Players{
+				for _, player := range gameCampaign.Players{
 					players = append(players, player)
 				}
-				cMap := campaign.CurrentMap
+				cMap := gameCampaign.CurrentMap
 
 				go playerMoveSubscriber(players, channel, cMap)
 				gameLoop(cMap, channel)
@@ -81,6 +88,7 @@ func main(){
 func campaignManagementLoop(channel *ampq.Channel) (*campaign.Campaign, error){
 	fmt.Println("Entering campaign management loop. Type 'quit' to exit.")
 	currentCampaign := campaign.NewCampaign("GM Campaign", "A GM campaign for GoGM", GM.NewGM("GameMaster", "The overseer of the game world"))
+	var loadedMap mapLogic.Map
 
 	commands := io.GetInput()
 	for {
@@ -102,11 +110,21 @@ func campaignManagementLoop(channel *ampq.Channel) (*campaign.Campaign, error){
 					default:
 						fmt.Println("Unknown create_map argument:", args)
 					}
-			case "update_map":
-				// Implement map update logic here
-			case "load_map":
-				// Implement map loading logic here
-			case "save_map":
+			case "edit_map":
+				// Implement map editor here
+			case "load_map": // loads a map from file
+				if len(args) == 0 {
+					fmt.Println("Please specify the map name to load.")
+					continue
+				}
+				loadedMapPtr, err := serialization.LoadFromJSONFile("gm", "map", args[0], mapLogic.Map{})
+				if err != nil{
+					fmt.Println("Error loading map:", err)
+					continue
+				}
+				loadedMap = *loadedMapPtr
+				fmt.Println("Map loaded:", args[0])
+			case "save_map": // saves a map to file
 				if len(args) == 0 {
 					fmt.Println("Please specify the map name to save.")
 					continue
@@ -125,13 +143,32 @@ func campaignManagementLoop(channel *ampq.Channel) (*campaign.Campaign, error){
 					continue
 				}
 				fmt.Println("Map saved:", args[0])
-			case "current_map":
+			case "add_map": // adds the loaded map to the campaign
+				if loadedMap.Name == "" {
+					fmt.Println("No map loaded to add. Please load a map first.")
+					continue
+				}
+				currentCampaign.AddMap(&loadedMap)
+				fmt.Println("Map added to campaign:", loadedMap.Name)
+			case "remove_map": // removes a map from the campaign
+				if len(args) == 0 {
+					fmt.Println("Please specify the map name to remove.")
+					continue
+				}
+				currentCampaign.RemoveMap(args[0])
+				fmt.Println("Map removed from campaign:", args[0])
+			case "current_map": // sets the map that is loaded when the campaign is started
 				if len(args) == 0 {
 					fmt.Println("Please specify the map name to set as the current map.")
 					continue
 				}
-				currentCampaign.CurrentMap = currentCampaign.Maps[args[0]]
-			case "load_campaign":
+				err := currentCampaign.SetCurrentMap(args[0])
+				if err != nil{
+					fmt.Println("Error setting current map:", err)
+					continue
+				}
+				fmt.Println("Current map set to:", args[0])
+			case "load_campaign": // loads a campaign from file
 				loadedCampaign, err := serialization.LoadFromJSONFile("gm", "campaigns", args[0], campaign.Campaign{})
 				if err != nil{
 					fmt.Println("Error loading campaign:", err)
@@ -139,7 +176,7 @@ func campaignManagementLoop(channel *ampq.Channel) (*campaign.Campaign, error){
 				}
 				currentCampaign = loadedCampaign
 				fmt.Println("Campaign loaded:", currentCampaign.Name)
-			case "save_campaign":
+			case "save_campaign": // saves the current campaign to file
 				err := serialization.SaveToFile(*currentCampaign, "gm", "campaigns", currentCampaign.Name)
 				if err != nil{
 					fmt.Println("Error saving campaign:", err)
@@ -148,10 +185,14 @@ func campaignManagementLoop(channel *ampq.Channel) (*campaign.Campaign, error){
 				fmt.Println("Campaign saved.")
 			case "add_player":
 				// Implement player addition logic here
+			case "edit_player":
+				// Implement player editing logic here
 			case "remove_player":
 				// Implement player removal logic here
 			case "add_npc":
 				// Implement NPC addition logic here
+			case "edit_npc":
+				// Implement NPC editing logic here
 			case "remove_npc":
 				// Implement NPC removal logic here
 			case "quit":
@@ -171,9 +212,9 @@ func gameLoop(m *mapLogic.Map, channel *ampq.Channel){
 	for {
 		command := commands[0]
 		switch command {
-			case "map":
+			case "map": // view the current map
 				m.PrintMapDebugWithPlayers(currentPlayers)
-			case "send":
+			case "send": // send info to players
 				if len(commands) < 2{
 					fmt.Println("Specify what to send: 'map'")
 					commands = io.GetInput()
@@ -188,7 +229,7 @@ func gameLoop(m *mapLogic.Map, channel *ampq.Channel){
 						commands = io.GetInput()
 						continue
 				}
-			case "update":
+			case "update": // send updates to players
 				if len(commands) < 2{
 					fmt.Println("Specify what to update: 'map'")
 					commands = io.GetInput()

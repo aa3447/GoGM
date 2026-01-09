@@ -1,6 +1,8 @@
 package campaign
 
 import (
+	"fmt"
+
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/mapLogic"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/gameLogic"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/playerLogic"
@@ -53,6 +55,19 @@ func (c *Campaign) NewGamestateWithExistingMap(existingMap *mapLogic.Map) (*mapL
 
 func (c *Campaign) AddMap(newMap *mapLogic.Map){
 	c.Maps[newMap.Name] = newMap
+}
+
+func (c *Campaign) RemoveMap(mapName string){
+	delete(c.Maps, mapName)
+}
+
+func (c *Campaign) SetCurrentMap(mapName string) error{
+	selectedMap, exists := c.Maps[mapName]
+	if !exists{
+		return  fmt.Errorf("map %s does not exist in campaign", mapName)
+	}
+	c.CurrentMap = selectedMap
+	return nil
 }
 
 func (c *Campaign) AddPlayer(newPlayer *playerLogic.Player){
