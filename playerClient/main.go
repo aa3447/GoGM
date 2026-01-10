@@ -152,8 +152,18 @@ func gameLoop(channel *ampq.Channel, pl *player.Player, campaign *campaign.Campa
 		switch command {
 			case "move":
 				handleMove(currentMap, pl, channel, args)
-			case "action":
-				//handleAction(args)
+			case "attack":
+				//handleAttack(args)
+			case "use":
+				//handleUse(args)
+			case "inventory":
+				pl.ShowInventory()
+			case "stats":
+				pl.ShowStats()
+			case "equipment":
+				pl.ShowEquipment()
+			case "look":
+				//handleLook(args)
 			case "map":
 				currentMap.PrintMapWithPlayer(pl)
 			case "quit":

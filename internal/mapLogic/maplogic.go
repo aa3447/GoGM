@@ -10,6 +10,7 @@ import (
 
 	player "home/aa3447/workspace/github.com/aa3447/GoGM/internal/playerLogic"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/gameLogic"
+	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/equipment"
 )
 
 type NPC struct{
@@ -25,17 +26,6 @@ type Encounter struct{
 	NPCs []NPC `json:"npcs"`
 }
 
-type Tile struct{
-	Name string `json:"name"`
-	Terrain Terrain `json:"terrain"`
-	Description string `json:"description"`
-	Walkable bool `json:"walkable"`
-	Encounter Encounter `json:"encounter,omitempty"`
-	Entrance bool `json:"entrance,omitempty"`
-	Exit bool `json:"exit,omitempty"`
-	VisibleOnMap bool `json:"visible_on_map"`
-}
-
 type Map struct{
 	Name string `json:"name"`
 	Description string `json:"description"`
@@ -47,13 +37,6 @@ type Map struct{
 
 }
 
-type Terrain int
-const (
-	TerrainGrass Terrain = iota
-	TerrainWater
-	TerrainMountain
-	TerrainForest
-)
 
 type PlayerMove struct{
 	PlayerName string `json:"player_name"`
@@ -337,3 +320,19 @@ func (m *Map) MovePlayer(player *player.Player ,deltaY int, deltaX int) (PlayerM
 
 	return playerMove,nil
 }
+
+func (m *Map) GetTileAt(y int, x int) (Tile, error){
+	if y < 0 || y >= len(m.Tiles) || x < 0 || x >= len(m.Tiles[0]){
+		return Tile{}, fmt.Errorf("coordinates out of bounds")
+	}
+	return m.Tiles[y][x], nil
+}
+
+func (m *Map) SetTileAt(y int, x int, tile Tile) error{
+	if y < 0 || y >= len(m.Tiles) || x < 0 || x >= len(m.Tiles[0]){
+		return fmt.Errorf("coordinates out of bounds")
+	}
+	m.Tiles[y][x] = tile
+	return nil
+}
+

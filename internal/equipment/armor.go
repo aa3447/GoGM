@@ -11,13 +11,13 @@ const (
 
 
 type Armor struct{
-	Name string
-	Description string
-	Defense int
-	Type ArmorType
-	Weight int
-	Rarity Rarity
-	IsCustom bool
+	Name string `json:"name"`
+	Description string `json:"description"`
+	Defense int `json:"defense"`
+	Type ArmorType `json:"type"`
+	Weight int `json:"weight"`
+	Rarity Rarity `json:"rarity"`
+	IsCustom bool `json:"is_custom"`
 }
 
 // Predefined armor types
@@ -123,4 +123,24 @@ func verifyArmorType(t ArmorType) bool{
 
 func (a *Armor) String() string {
 	return fmt.Sprintf("%s (Type: %d, Defense: %d, Weight: %d, Rarity: %d)", a.Name, a.Type, a.Defense, a.Weight, a.Rarity)
+}
+
+func (a Armor) GetName() string {
+	return a.Name
+}
+
+func (a Armor) GetDescription() string {
+	return a.Description
+}
+
+func (a Armor) GetWeight() int {
+	return a.Weight
+}
+
+func (a Armor) GetRarity() Rarity {
+	return a.Rarity
+}
+
+func (a Armor) IsCustomEquipment() bool {
+	return a.IsCustom
 }

@@ -14,13 +14,13 @@ const (
 )
 
 type Weapon struct{
-	Name string
-	Description string
-	Damage int
-	Type WeaponType
-	Weight int
-	Rarity Rarity
-	IsCustom bool
+	Name string `json:"name"`
+	Description string `json:"description"`
+	Damage int `json:"damage"`
+	Type WeaponType `json:"type"`
+	Weight int `json:"weight"`
+	Rarity Rarity `json:"rarity"`
+	IsCustom bool `json:"is_custom"`
 }
 
 // Predefined weapon types
@@ -118,6 +118,23 @@ func verifyWeaponType(t WeaponType) bool{
 	}
 }
 
-func (w Weapon) String() string {
+func (w *Weapon) String() string {
 	return fmt.Sprintf("%s (Type: %d, Damage: %d, Weight: %d, Rarity: %d)", w.Name, w.Type, w.Damage, w.Weight, w.Rarity)
+}
+
+func (w *Weapon) GetName() string{
+	return w.Name
+}
+
+func (w *Weapon) GetDescription() string{
+	return w.Description
+}
+func (w *Weapon) GetWeight() int{
+	return w.Weight
+}
+func (w *Weapon) GetRarity() Rarity{
+	return w.Rarity
+}
+func (w *Weapon) IsCustomEquipment() bool{
+	return w.IsCustom
 }
