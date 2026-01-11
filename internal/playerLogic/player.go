@@ -2,8 +2,6 @@ package playerLogic
 
 import (
 	"fmt"
-	"math/rand"
-	"sort"
 
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/equipment"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/gameLogic"
@@ -21,7 +19,7 @@ type Player struct{
 	Mana int
 	MaxMana int
 	Attributes PlayerAttributes
-	Buffs map[string]Buff
+	Buffs map[string]gameLogic.Buff
 	Inventory []equipment.Equipment
 	CurrentArmor equipment.Armor
 	CurrentWeapon equipment.Weapon
@@ -39,114 +37,6 @@ type PlayerAttributes struct{
 }
 
 
-// NewPlayer creates a new Player with the specified name, description, background, and stat generation method.
-func NewPlayer(name, description, background, statMethod string, args ...[]int) *Player{
-	var stats []int
-
-	if statMethod == ""{
-		statMethod = "roll"
-	}
-	switch statMethod {
-		case "roll":
-			stats = statMethodRoll()
-		case "buy":
-			stats = statMethodRoll() //placeholder for buy method
-		case "assign":
-			stats = args[0]
-		default:
-			fmt.Println("Invalid stat method, defaulting to roll")
-			stats = statMethodRoll()
-	}
-	
-
-	player := &Player{
-		Name: name,
-		Description: description,
-		Background: background,
-		Level: 1,
-		Experience: 0,
-		Health: 100,
-		MaxHealth: 100,
-		Attributes: PlayerAttributes{},
-		PlayerPositionX: 0,
-		PlayerPositionY: 0,
-	}
-
-	statAssign(player, stats)
-
-	return player
-}
-
-// statMethodRoll generates stats by rolling 4d6 and dropping the lowest die for each of the 6 attributes.
-func statMethodRoll() []int{
-	stats := make([]int, 6)
-	for i := range 6{
-		rolls := make([]int, 4)
-		for range 4{
-			rolls = append(rolls, rand.Intn(6)+1)
-		}
-		//remove lowest roll
-		sort.Ints(rolls)
-		rollsLowestRemoved := rolls[1:]
-		sum := 0
-		for _, roll := range rollsLowestRemoved {
-			sum += roll
-		}
-		stats[i] = sum
-	}
-	return stats
-}
-
-// statAssign assigns the generated stats to the player's attributes based on user input.
-func statAssign(p *Player, stats []int){
-	var choice int
-	var choicesMade = make(map[int]bool)
-	fmt.Printf("Here is your stat spread %v", stats)
-
-	for i, stat := range stats{
-		fmt.Printf("Stat %d: %d\n", i+1, stat)
-		fmt.Print("Assign to (1) Strength, (2) Dexterity, (3) Intelligence, (4) Constitution, (5) Charisma, (6) Wisdom: ")
-		
-		
-		fmt.Scan(&choice)
-		choice = choiceValidation(choice, 1, 6)
-		for choicesMade[choice]{
-			fmt.Println("Stat already assigned, please choose another stat.")
-			fmt.Scan(&choice)
-			choice = choiceValidation(choice, 1, 6)
-		}
-
-		switch choice{
-			case 1:
-				p.Attributes.Strength = stat
-			case 2:
-				p.Attributes.Dexterity = stat
-			case 3:
-				p.Attributes.Intelligence = stat
-			case 4:
-				p.Attributes.Constitution = stat
-			case 5:
-				p.Attributes.Charisma = stat
-			case 6:
-				p.Attributes.Wisdom = stat
-		}
-		choicesMade[choice] = true
-	}
-
-	fmt.Printf("Final Attributes: %+v\n", p.Attributes)
-}
-
-func choiceValidation(input int, min int, max int) int{
-	for input < min || input > max{
-		fmt.Printf("Invalid choice. Please enter a number between %d and %d: ", min, max)
-		_, err := fmt.Scan(&input)
-		if err != nil{
-			continue
-		}
-	}
-	return input
-}
-
 func (p *Player) SetLocation(y int, x int){
 	p.PlayerPositionY = y
 	p.PlayerPositionX = x
@@ -161,7 +51,7 @@ func (p *Player) GetPlayerPosition() (int, int){
 	return p.PlayerPositionY, p.PlayerPositionX
 }
 
-func (p *PLayer) Heal(amount int){
+func (p *Player) Heal(amount int){
 	p.Health += amount
 	if p.Health > p.MaxHealth{
 		p.Health = p.MaxHealth
@@ -191,14 +81,14 @@ func (p *Player) UseMana(amount int) bool{
 }
 
 func (p *Player) BuffAttribute(attr string, amount int, duration int){
-	 buff := Buff{
+	 buff := gameLogic.Buff{
 		Attribute: attr,
 		Amount: amount,
 		Duration: duration,
 	}
 	
 	if p.Buffs == nil{
-		p.Buffs = make(map[string]Buff)
+		p.Buffs = make(map[string]gameLogic.Buff)
 	}
 	if existingBuff, exists := p.Buffs[attr]; exists{
 		if amount > existingBuff.Amount{
@@ -219,15 +109,15 @@ func (p *Player) RemoveBuff(attr string){
 	delete(p.Buffs, attr)
 }
 
-func (p *Player) GetBuffs() []Buff{
-	buffs := []Buff{}
+func (p *Player) GetBuffs() []gameLogic.Buff{
+	buffs := []gameLogic.Buff{}
 	for _, buff := range p.Buffs{
 		buffs = append(buffs, buff)
 	}
 	return buffs
 }
 
-func (p *Player) GetBuffByAttribute(attr string) *Buff{
+func (p *Player) GetBuffByAttribute(attr string) *gameLogic.Buff{
 	if buff, exists := p.Buffs[attr]; exists{
 		return &buff
 	}

@@ -12,7 +12,7 @@ import (
 
 // JSONSafe is a constraint that includes types that can be serialized/deserialized to/from JSON.
 type JSONSafe interface{
-	mapLogic.Map | mapLogic.PlayerMove | campaign.Campaign | equipment.Equipment
+	mapLogic.Map | mapLogic.PlayerMove | campaign.Campaign | equipment.Weapon | equipment.Armor | equipment.Potion
 }
 
 // JSONTo deserializes JSON data into the specified type J.

@@ -1,5 +1,9 @@
 package gameLogic
 
+import (
+	"fmt"
+)
+
 type Buff struct{
 	Attribute string
 	Amount int

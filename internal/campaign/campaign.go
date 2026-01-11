@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/mapLogic"
-	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/gameLogic"
+	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/gameState"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/playerLogic"
 )
 
@@ -34,7 +34,7 @@ func (c *Campaign) NewGamestateWithRandomMap(mapSizeY int, mapSizeX int ,encount
 		return nil ,err
 	}
 
-	gameMap.GameState = &gameLogic.Gamestate{
+	gameMap.GameState = &gameState.Gamestate{
 		Players: c.Players,
 	}
 
@@ -44,7 +44,7 @@ func (c *Campaign) NewGamestateWithRandomMap(mapSizeY int, mapSizeX int ,encount
 }
 
 func (c *Campaign) NewGamestateWithExistingMap(existingMap *mapLogic.Map) (*mapLogic.Map, error){
-	existingMap.GameState = &gameLogic.Gamestate{
+	existingMap.GameState = &gameState.Gamestate{
 		Players: c.Players,
 	}
 
@@ -81,3 +81,5 @@ func (c *Campaign) RemovePlayer(playerName string){
 func (c *Campaign) SetGM(newGM playerLogic.GM){
 	c.GM = newGM
 }
+
+func (c *Campaign) isJsonSafe(){}

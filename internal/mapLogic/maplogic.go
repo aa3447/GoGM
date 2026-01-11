@@ -9,8 +9,7 @@ import (
 	"log"
 
 	player "home/aa3447/workspace/github.com/aa3447/GoGM/internal/playerLogic"
-	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/gameLogic"
-	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/equipment"
+	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/gameState"
 )
 
 type NPC struct{
@@ -33,7 +32,7 @@ type Map struct{
 	EntranceLocation []int `json:"entrance_location,omitempty"`
 	ExitLocation []int `json:"exit_location,omitempty"`
 	FileLocation string `json:"file_location,omitempty"`
-	GameState *gameLogic.Gamestate `json:"-"`
+	GameState *gameState.Gamestate `json:"-"`
 
 }
 
@@ -335,4 +334,7 @@ func (m *Map) SetTileAt(y int, x int, tile Tile) error{
 	m.Tiles[y][x] = tile
 	return nil
 }
+
+func (m *Map) IsJsonSafe(){}
+func (pm *PlayerMove) IsJsonSafe(){}
 

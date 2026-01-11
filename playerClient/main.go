@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"flag"
 
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/campaign"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/io"
@@ -17,19 +18,28 @@ import (
 )
 
 func main(){
-	conn, err := ampq.Dial("amqp://guest:guest@localhost:5672/")
-	if err != nil{
-		fmt.Println("failed to connect to RabbitMQ:", err)
-		return
+
+	onlinePtr := flag.Bool("online", false, "Run the GM client in online mode")
+	flag.Parse()
+	var channel *ampq.Channel
+	var conn *ampq.Connection
+	var err error
+
+	if *onlinePtr{
+		conn, err = ampq.Dial("amqp://guest:guest@localhost:5672/")
+		if err != nil{
+			fmt.Println("failed to connect to RabbitMQ:", err)
+			return
+		}
+		defer conn.Close()
+		
+		channel , err = conn.Channel()
+		if err != nil{
+			fmt.Println("failed to open a channel:", err)
+			return
+		}
+		defer channel.Close()
 	}
-	defer conn.Close()
-	
-	channel , err := conn.Channel()
-	if err != nil{
-		fmt.Println("failed to open a channel:", err)
-		return
-	}
-	defer channel.Close()
 
 	var currentCampaign *campaign.Campaign
 	var newPlayer *player.Player
@@ -45,6 +55,11 @@ func main(){
 					return
 				}
 			case "play":
+				if onlinePtr == nil || !*onlinePtr || channel == nil{
+					fmt.Println("Please run the player client with -online flag to enter play mode.")
+					commands = io.GetInput()
+					continue
+				}
 				if currentCampaign == nil{
 					fmt.Println("Please join a campaign first.")
 					continue
@@ -77,7 +92,7 @@ func managementLoop(channel *ampq.Channel) (*campaign.Campaign, *player.Player, 
 		command := commands[0]
 		switch command {
 			case "create":
-				currentPlayer = createPlayer()
+				currentPlayer = player.CreatePlayer()
 			case "update":
 				//handleUpdate(args)
 			case "load":
@@ -112,30 +127,6 @@ func managementLoop(channel *ampq.Channel) (*campaign.Campaign, *player.Player, 
 	}
 }
 
-func createPlayer() *player.Player{
-	fmt.Println("Creating new player.")
-	fmt.Print("Enter player name: ")
-	name := io.GetInput()[0]
-	fmt.Print("Enter player description: ")
-	description := io.GetInput()[0]
-	fmt.Print("Enter player background: ")
-	background := io.GetInput()[0]
-	fmt.Print("Enter stat generation method (roll, buy, assign): ")
-	statMethod := io.GetInput()[0]
-	var stats []int
-	if statMethod == "assign"{
-		fmt.Print("Enter stats as space-separated integers (Str Dex Int Con Cha Wis): ")
-		statInputs := io.GetInput()
-		for _, s := range statInputs{
-			var stat int
-			fmt.Sscanf(s, "%d", &stat)
-			stats = append(stats, stat)
-		}
-	}
-	player := player.NewPlayer(name, description, background, statMethod, stats)
-	fmt.Println("Player created:", player.Name)
-	return player
-}
 
 func gameLoop(channel *ampq.Channel, pl *player.Player, campaign *campaign.Campaign){
 	log.Println("Entering game loop.")

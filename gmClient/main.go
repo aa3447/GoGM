@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"flag"
 
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/campaign"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/io"
@@ -17,24 +18,32 @@ import (
 
 func main(){
 
-	conn, err := ampq.Dial("amqp://guest:guest@localhost:5672/")
-	if err != nil{
-		fmt.Println("failed to connect to RabbitMQ:", err)
-		return
-	}
-	defer conn.Close()
+	onlinePtr := flag.Bool("online", false, "Run the GM client in online mode")
+	flag.Parse()
+	var channel *ampq.Channel
+	var conn *ampq.Connection
+	var err error
 
-	channel , err := conn.Channel()
-	if err != nil{
-		fmt.Println("failed to open a channel:", err)
-		return
-	}
-	defer channel.Close()
+	if *onlinePtr{
+		conn, err = ampq.Dial("amqp://guest:guest@localhost:5672/")
+		if err != nil{
+			fmt.Println("failed to connect to RabbitMQ:", err)
+			return
+		}
+		defer conn.Close()
 
-	err = pubsub.SetupExchanges()
-	if err != nil{
-		fmt.Println("Error starting pubsub:", err)
-		return
+		channel , err = conn.Channel()
+		if err != nil{
+			fmt.Println("failed to open a channel:", err)
+			return
+		}
+		defer channel.Close()
+
+		err = pubsub.SetupExchanges()
+		if err != nil{
+			fmt.Println("Error starting pubsub:", err)
+			return
+		}
 	}
 
 	var gameCampaign *campaign.Campaign
@@ -51,7 +60,7 @@ func main(){
 		args := commands[1:]
 		switch command {
 			case "load":
-				gameCampaign, err := serialization.LoadFromJSONFile("gm", "campaigns", args[0], campaign.Campaign{})
+				gameCampaign, err = serialization.LoadFromJSONFile("gm", "campaigns", args[0], campaign.Campaign{})
 				if err != nil{
 					fmt.Println("Error loading campaign:", err)
 					continue
@@ -64,6 +73,11 @@ func main(){
 					return
 				}
 			case "play":
+				if onlinePtr == nil || !*onlinePtr || channel == nil{
+					fmt.Println("Please run the GM client with -online flag to enter play mode.")
+					commands = io.GetInput()
+					continue
+				}
 				players := []*GM.Player{}
 				// change to connected players for gamestate :todo:
 				for _, player := range gameCampaign.Players{
