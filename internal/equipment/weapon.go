@@ -6,12 +6,16 @@ import (
 
 type WeaponType int
 const (
-	WeaponTypeSword WeaponType  = iota
-	WeaponTypeAxe
-	WeaponTypeMace
-	WeaponTypeBow
-	WeaponTypeDagger
+	MeleeWeaponTypeSword WeaponType  = iota
+	MeleeWeaponTypeAxe
+	MeleeWeaponTypeMace
+	MeleeWeaponTypeDagger
+	RangeWeaponTypeBow
+	RangeWeaponTypeCrossbow
+	RangeWeaponTypeSling
 )
+
+
 
 type Weapon struct{
 	Name string `json:"name"`
@@ -29,7 +33,7 @@ var mapOfWeapons = map[string]Weapon{
 		Name: "Short Sword",
 		Description: "A light and versatile melee weapon.",
 		Damage: 6,
-		Type: WeaponTypeSword,
+		Type: MeleeWeaponTypeSword,
 		Weight: 5,
 		Rarity: Common,
 		IsCustom: false,
@@ -38,7 +42,7 @@ var mapOfWeapons = map[string]Weapon{
 		Name: "Long Sword",
 		Description: "A balanced melee weapon with good reach.",
 		Damage: 8,
-		Type: WeaponTypeSword,
+		Type: MeleeWeaponTypeSword,
 		Weight: 10,
 		Rarity: Uncommon,
 		IsCustom: false,
@@ -47,9 +51,45 @@ var mapOfWeapons = map[string]Weapon{
 		Name: "Great Axe",
 		Description: "A heavy weapon that deals massive damage.",
 		Damage: 12,
-		Type: WeaponTypeAxe,
+		Type: MeleeWeaponTypeAxe,
 		Weight: 20,
 		Rarity: Rare,
+		IsCustom: false,
+	},
+	"Long Bow": {
+		Name: "Long Bow",
+		Description: "A ranged weapon effective at long distances.",
+		Damage: 10,
+		Type: RangeWeaponTypeBow,
+		Weight: 15,
+		Rarity: Uncommon,
+		IsCustom: false,
+	},
+	"Short Bow": {
+		Name: "Short Bow",
+		Description: "A ranged weapon effective at short distances.",
+		Damage: 8,
+		Type: RangeWeaponTypeBow,
+		Weight: 10,
+		Rarity: Common,
+		IsCustom: false,
+	},
+	"Crossbow": {
+		Name: "Crossbow",
+		Description: "A ranged weapon with high accuracy and power.",
+		Damage: 12,
+		Type: RangeWeaponTypeCrossbow,
+		Weight: 20,
+		Rarity: Rare,
+		IsCustom: false,
+	},
+	"Sling": {
+		Name: "Sling",
+		Description: "A simple ranged weapon for throwing small projectiles.",
+		Damage: 4,
+		Type: RangeWeaponTypeSling,
+		Weight: 3,
+		Rarity: Common,
 		IsCustom: false,
 	},
 }
@@ -111,7 +151,7 @@ func removeCustomWeapon(name string){
 // verifyWeaponType checks if the provided WeaponType is valid.
 func verifyWeaponType(t WeaponType) bool{
 	switch t{
-		case WeaponTypeSword, WeaponTypeAxe, WeaponTypeMace, WeaponTypeBow, WeaponTypeDagger:
+		case MeleeWeaponTypeSword, MeleeWeaponTypeAxe, MeleeWeaponTypeMace, MeleeWeaponTypeDagger, RangeWeaponTypeBow, RangeWeaponTypeCrossbow, RangeWeaponTypeSling:
 			return true
 		default:
 			return false

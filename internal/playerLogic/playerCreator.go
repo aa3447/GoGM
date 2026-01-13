@@ -5,8 +5,11 @@ import (
 	"math/rand"
 	"sort"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/io"
+	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/equipment"
+	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/gameLogic"
 )
 
+// CreatePlayer interacts with the user to create a new Player character.
 func CreatePlayer() *Player{
 	fmt.Println("Creating new player.")
 	fmt.Print("Enter player name: ")
@@ -18,6 +21,7 @@ func CreatePlayer() *Player{
 	fmt.Print("Enter stat generation method (roll, buy, assign): ")
 	statMethod := io.GetInput()[0]
 	var stats []int
+	
 	if statMethod == "assign"{
 		var acceptedStats = false
 		for !acceptedStats{
@@ -39,6 +43,7 @@ func CreatePlayer() *Player{
 			}
 		}
 	}
+	
 	player := NewPlayer(name, description, background, statMethod, stats)
 	fmt.Println("Player created:", player.Name)
 	return player
@@ -88,16 +93,26 @@ func NewPlayer(name, description, background, statMethod string, args ...[]int) 
 		Name: name,
 		Description: description,
 		Background: background,
+		Class: "",
 		Level: 1,
 		Experience: 0,
 		Health: 100,
-		MaxHealth: 100,
+		Mana: 50,
 		Attributes: PlayerAttributes{},
+		Buffs: make(map[string]gameLogic.Buff),
+		Inventory: []equipment.Equipment{},
+		DerivedStats: make(map[string]map[string]int),
+		CurrentArmor: equipment.Armor{},
+		CurrentWeapon: equipment.Weapon{},
 		PlayerPositionX: 0,
 		PlayerPositionY: 0,
 	}
 
 	statAssign(player, stats)
+
+	player.SetDerivedStats()
+	player.Health = player.DerivedStats["Constitution"]["MaxHealth"]
+	player.Mana = player.DerivedStats["Intelligence"]["MaxMana"]
 
 	return player
 }
@@ -122,6 +137,7 @@ func statMethodRoll() []int{
 	return stats
 }
 
+// pointBuySystem allows the user to allocate points to stats using a point-buy system.
 func pointBuySystem() []int{
 	var acceptedStats = false
 	points := 20
@@ -231,6 +247,7 @@ func statAssign(p *Player, stats []int){
 	fmt.Printf("Final Attributes: %+v\n", p.Attributes)
 }
 
+// choiceValidation ensures the input is within the specified range.
 func choiceValidation(input int, min int, max int) int{
 	for input < min || input > max{
 		fmt.Printf("Invalid choice. Please enter a number between %d and %d: ", min, max)
