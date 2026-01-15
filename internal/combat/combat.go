@@ -13,53 +13,43 @@ func CombatLoop(players []*playerLogic.Player, enemies []*playerLogic.NPC){
 
 	for len(players) > 0 && len(enemies) > 0{
 		for _, combatant := range combatOrder{
-			switch v := combatant.(type){
-				case *playerLogic.Player:
-					// Player's turn logic here
-				case *playerLogic.NPC:
-					// NPC's turn logic here
+			if combatant[1] == 0{ // Player's turn
+				player := players[combatant[2]]
+				// Player action logic here
+				_ = player // Placeholder to avoid unused variable error
+			} else { // Enemy's turn
+				enemy := enemies[combatant[2]]
+				// Enemy action logic here
+				_ = enemy // Placeholder to avoid unused variable error
+			}
+			// Check for end of combat conditions
+			if len(players) == 0 || len(enemies) == 0{
+				break
 			}
 		}
 	}
 }
 
-func determineCombatOrder(players []*playerLogic.Player, enemies []*playerLogic.NPC) []any{
-	var combatants []any
-	for _, p := range players{
-		combatants = append(combatants, p)
-	}
-	for _, e := range enemies{
-		combatants = append(combatants, e)
-	}
+func determineCombatOrder(players []*playerLogic.Player, enemies []*playerLogic.NPC) [][]int{
+	// Store initiatives as [initiativeRoll, type(0=player,1=enemy), indexInOriginalSlice]
+	var combatants [][]int
+	var playerInitiatives [][]int
+	var enemyInitiatives [][]int
 
 	// Roll initiative for each combatant
-	for _, c := range combatants{
-		switch v := c.(type){
-			case *playerLogic.Player:
-				initiativeRoll := gameLogic.DiceRoll(20) + v.AttributeModifiers["Dexterity"]
-				v.Initiative = initiativeRoll
-			case *playerLogic.NPC:
-				initiativeRoll := gameLogic.DiceRoll(20) + v.AttributeModifiers["Dexterity"]
-				v.Initiative = initiativeRoll
-		}
+	for i, c := range players{
+		initRoll := gameLogic.DiceRollWithModifier(20, c.AttributeModifiers["Dexterity"])
+		playerInitiatives = append(playerInitiatives, []int{initRoll, 0, i})
+	}
+	for i, c := range enemies{
+		initRoll := gameLogic.DiceRollWithModifier(20, c.AttributeModifiers["Dexterity"])
+		enemyInitiatives = append(enemyInitiatives, []int{initRoll, 1, i})
 	}
 
-	// Sort combatants by initiative
-	slices.SortFunc(combatants, func(a, b any) int {
-		var initA, initB int
-		switch v := a.(type){
-			case *playerLogic.Player:
-				initA = v.Initiative
-			case *playerLogic.NPC:
-				initA = v.Initiative
-		}
-		switch v := b.(type){
-			case *playerLogic.Player:
-				initB = v.Initiative
-			case *playerLogic.NPC:
-				initB = v.Initiative
-		}
-		return initB - initA // Descending order
+	combatants = append(playerInitiatives, enemyInitiatives...)
+
+	slices.SortFunc(combatants, func(a, b []int) int {
+		return b[0] - a[0] // Descending order
 	})
 
 	return combatants

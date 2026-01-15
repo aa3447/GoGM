@@ -14,6 +14,8 @@ type Campaign struct {
 	Description string `json:"description"`
 	GM playerLogic.GM `json:"gm"`
 	Players map[string]*playerLogic.Player `json:"players"`
+	NPCs map[string]*playerLogic.NPC `json:"npcs"`
+	Monsters map[string]*playerLogic.NPC `json:"monsters"`
 	Maps map[string]*mapLogic.Map `json:"maps"`
 	CurrentMap *mapLogic.Map `json:"current_map,omitempty"`
 }
@@ -76,6 +78,40 @@ func (c *Campaign) AddPlayer(newPlayer *playerLogic.Player){
 
 func (c *Campaign) RemovePlayer(playerName string){
 	delete(c.Players, playerName)
+}
+
+func (c *Campaign) GetPlayer(playerName string) (*playerLogic.Player, bool){
+	player, exists := c.Players[playerName]
+	return player, exists
+}
+
+func (c *Campaign) ListPlayers() []string{
+	playerNames := []string{}
+	for name := range c.Players{
+		playerNames = append(playerNames, name)
+	}
+	return playerNames
+}
+
+func (c *Campaign) AddNPC(newNPC *playerLogic.NPC){
+	c.NPCs[newNPC.Name] = newNPC
+}
+
+func (c *Campaign) RemoveNPC(npcName string){
+	delete(c.NPCs, npcName)
+}
+
+func (c *Campaign) GetNPC(npcName string) (*playerLogic.NPC, bool){
+	npc, exists := c.NPCs[npcName]
+	return npc, exists
+}
+
+func (c *Campaign) ListNPCs() []string{
+	npcNames := []string{}
+	for name := range c.NPCs{
+		npcNames = append(npcNames, name)
+	}
+	return npcNames
 }
 
 func (c *Campaign) SetGM(newGM playerLogic.GM){

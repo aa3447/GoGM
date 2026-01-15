@@ -103,6 +103,7 @@ func campaignManagementLoop(channel *ampq.Channel) (*campaign.Campaign, error){
 	fmt.Println("Entering campaign management loop. Type 'quit' to exit.")
 	currentCampaign := campaign.NewCampaign("GM Campaign", "A GM campaign for GoGM", GM.NewGM("GameMaster", "The overseer of the game world"))
 	var loadedMap mapLogic.Map
+	var loadedNPC GM.NPC
 
 	commands := io.GetInput()
 	for {
@@ -204,11 +205,48 @@ func campaignManagementLoop(channel *ampq.Channel) (*campaign.Campaign, error){
 			case "remove_player":
 				// Implement player removal logic here
 			case "add_npc":
-				// Implement NPC addition logic here
+				if loadedNPC.Name == "" {
+					fmt.Println("No NPC loaded to add. Please load an NPC first.")
+					continue
+				}
+				currentCampaign.NPCs[loadedNPC.Name] = &loadedNPC
+				fmt.Println("NPC added to campaign:", loadedNPC.Name)
 			case "edit_npc":
 				// Implement NPC editing logic here
 			case "remove_npc":
-				// Implement NPC removal logic here
+				if len(args) == 0 {
+					fmt.Println("Please specify the NPC name to remove.")
+					continue
+				}
+				delete(currentCampaign.NPCs, args[0])
+				fmt.Println("NPC removed from campaign:", args[0])
+			case "load_npc":
+				if len(args) == 0 {
+					fmt.Println("Please specify the NPC name to load.")
+					continue
+				}
+				loadedNPCPtr, err := serialization.LoadFromJSONFile("gm", "campaigns/npcs", args[0], GM.NPC{})
+				if err != nil{
+					fmt.Println("Error loading NPC:", err)
+					continue
+				}
+				loadedNPC = *loadedNPCPtr
+			case "save_npc":
+				if len(args) == 0 {
+					fmt.Println("Please specify the NPC name to save.")
+					continue
+				}
+				npc, exists := currentCampaign.NPCs[args[0]]
+				if !exists {
+					fmt.Println("NPC not found in campaign:", args[0])
+					continue
+				}
+				err := serialization.SaveToFile(*npc, "gm", "campaigns/npcs", args[0])
+				if err != nil{
+					fmt.Println("Error saving NPC:", err)
+					continue
+				}
+				fmt.Println("NPC saved:", args[0])
 			case "quit":
 				fmt.Println("Exiting campaign management loop.")
 				return currentCampaign, nil

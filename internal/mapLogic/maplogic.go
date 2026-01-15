@@ -335,6 +335,4 @@ func (m *Map) SetTileAt(y int, x int, tile Tile) error{
 	return nil
 }
 
-func (m *Map) IsJsonSafe(){}
-func (pm *PlayerMove) IsJsonSafe(){}
 

@@ -8,35 +8,35 @@ import (
 )
 
 type Player struct{
-	Name string
-	Description string
-	Background string
-	Class string
-	Level int
-	Experience int
-	Health int
-	Mana int
-	Attributes PlayerAttributes
-	Buffs map[string]gameLogic.Buff
-	Inventory []equipment.Equipment
-	AttributeModifiers map[string]int
-	DerivedStats map[string]map[string]int
-	CurrentArmor equipment.Armor
-	CurrentWeapon equipment.Weapon
-	PlayerPositionX int
-	PlayerPositionY int
-	Initiative int
-	IsUnconscious bool
-	IsAlive bool
+	Name string `json:"name"`
+	Description string `json:"description"`
+	Background string `json:"background"`
+	Class string `json:"class"`
+	Level int `json:"level"`
+	Experience int `json:"experience"`
+	Health int `json:"health"`
+	Mana int `json:"mana"`
+	Attributes PlayerAttributes `json:"attributes"`
+	Buffs map[string]gameLogic.Buff `json:"buffs"`
+	Inventory []equipment.Equipment `json:"inventory"`
+	AttributeModifiers map[string]int `json:"attributeModifiers"`
+	DerivedStats map[string]map[string]int `json:"derivedStats"`
+	CurrentArmor equipment.Armor `json:"currentArmor"`
+	CurrentWeapon equipment.Weapon `json:"currentWeapon"`
+	PlayerPositionX int `json:"playerPositionX"`
+	PlayerPositionY int `json:"playerPositionY"`
+	Initiative int `json:"initiative"`
+	IsUnconscious bool `json:"isUnconscious"`
+	IsAlive bool `json:"isAlive"`
 }
 
 type PlayerAttributes struct{
-	Strength int
-	Dexterity int
-	Intelligence int
-	Constitution int
-	Charisma int
-	Wisdom int
+	Strength int `json:"strength"`
+	Dexterity int `json:"dexterity"`
+	Intelligence int `json:"intelligence"`
+	Constitution int `json:"constitution"`
+	Charisma int `json:"charisma"`
+	Wisdom int `json:"wisdom"`
 }
 
 // SetAttributeModifiers calculates and sets the attribute modifiers based on the player's attributes.
@@ -125,21 +125,24 @@ func (p *Player) GetDerivedStat(attribute string, stat string) int{
 	return 0
 }
 
-
+// SetLocation sets the player's position on the map.
 func (p *Player) SetLocation(y int, x int){
 	p.PlayerPositionY = y
 	p.PlayerPositionX = x
 }
 
+// Move updates the player's position by the specified deltas.
 func (p *Player) Move(deltaY int, deltaX int){
 	p.PlayerPositionY += deltaY
 	p.PlayerPositionX += deltaX
 }
 
+// GetPlayerPosition returns the player's current position on the map.
 func (p *Player) GetPlayerPosition() (int, int){
 	return p.PlayerPositionY, p.PlayerPositionX
 }
 
+// Heal increases the player's health by the specified amount, up to the maximum health.
 func (p *Player) Heal(amount int){
 	p.Health += amount
 	if p.Health > p.DerivedStats["Constitution"]["MaxHealth"]{
@@ -147,6 +150,7 @@ func (p *Player) Heal(amount int){
 	}
 }
 
+// RestoreMana increases the player's mana by the specified amount, up to the maximum mana.
 func (p *Player) RestoreMana(amount int){
 	p.Mana += amount
 	if p.Mana > p.DerivedStats["Intelligence"]["MaxMana"]{
@@ -154,6 +158,7 @@ func (p *Player) RestoreMana(amount int){
 	}
 }
 
+// TakeDamage decreases the player's health by the specified amount.
 func (p *Player) TakeDamage(amount int){
 	p.Health -= amount
 	if p.Health < 0{
@@ -161,6 +166,7 @@ func (p *Player) TakeDamage(amount int){
 	}
 }
 
+// UseMana decreases the player's mana by the specified amount if enough mana is available.
 func (p *Player) UseMana(amount int) bool{
 	if p.Mana < amount{
 		return false
@@ -169,6 +175,7 @@ func (p *Player) UseMana(amount int) bool{
 	return true
 }
 
+// BuffAttribute applies a buff to the specified attribute for a given duration.
 func (p *Player) BuffAttribute(attr string, amount int, duration int){
 	 buff := gameLogic.Buff{
 		Attribute: attr,
@@ -195,11 +202,13 @@ func (p *Player) BuffAttribute(attr string, amount int, duration int){
 	
 }
 
+// RemoveBuff removes the buff from the specified attribute.
 func (p *Player) RemoveBuff(attr string){
 	delete(p.Buffs, attr)
 	p.SetDerivedStatsForAttribute(attr)
 }
 
+// GetBuffs returns a slice of all active buffs on the player.
 func (p *Player) GetBuffs() []gameLogic.Buff{
 	buffs := []gameLogic.Buff{}
 	for _, buff := range p.Buffs{
@@ -208,6 +217,7 @@ func (p *Player) GetBuffs() []gameLogic.Buff{
 	return buffs
 }
 
+// GetBuffByAttribute returns the buff for a specific attribute, if it exists.
 func (p *Player) GetBuffByAttribute(attr string) *gameLogic.Buff{
 	if buff, exists := p.Buffs[attr]; exists{
 		return &buff
@@ -215,12 +225,14 @@ func (p *Player) GetBuffByAttribute(attr string) *gameLogic.Buff{
 	return nil
 }
 
+// ListBuffs prints all active buffs on the player.
 func (p *Player) ListBuffs(){
 	for _, buff := range p.Buffs{
 		fmt.Println(buff.String())
 	}
 }
 
+// ShowInventory prints the player's inventory.
 func (p *Player) ShowInventory(){
 	fmt.Println("Inventory:")
 	for _, item := range p.Inventory{
@@ -228,6 +240,7 @@ func (p *Player) ShowInventory(){
 	}
 }
 
+// ShowStats prints the player's stats.
 func (p *Player) ShowStats(){
 	fmt.Printf("Player: %s\n", p.Name)
 	fmt.Printf("Level: %d, Experience: %d\n", p.Level, p.Experience)
@@ -241,6 +254,7 @@ func (p *Player) ShowStats(){
 	fmt.Printf("  Wisdom: %d\n", p.Attributes.Wisdom)
 }
 
+// ShowEquipment prints the player's currently equipped weapon and armor.
 func (p *Player) ShowEquipment(){
 	fmt.Println("Current Equipment:")
 	fmt.Printf("  Weapon: %s\n", p.CurrentWeapon.String())
