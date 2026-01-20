@@ -7,6 +7,7 @@ import (
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/io"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/equipment"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/gameLogic"
+	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/classes"
 )
 
 // CreatePlayer interacts with the user to create a new Player character.
@@ -94,23 +95,33 @@ func NewPlayer(name, description, background, statMethod string, args ...[]int) 
 		Description: description,
 		Background: background,
 		Class: "",
+		LevelTrack: LevelingTrackNormal,
 		Level: 1,
 		Experience: 0,
-		Health: 100,
-		Mana: 50,
+		Health: 1,
+		Mana: 1,
 		Attributes: PlayerAttributes{},
 		Buffs: make(map[string]gameLogic.Buff),
 		Inventory: []equipment.Equipment{},
+		AttributeModifiers: make(map[string]int),
 		DerivedStats: make(map[string]map[string]int),
+		HitDieRolls: []int{},
+		HitDieTotal: 0,
 		CurrentArmor: equipment.Armor{},
 		CurrentWeapon: equipment.Weapon{},
+		Initiative: 0,
+		IsUnconscious: false,
+		IsAlive: true,
 		PlayerPositionX: 0,
 		PlayerPositionY: 0,
 	}
 
 	statAssign(player, stats)
-
+	player.Class = pickClass()
+	player.LevelTrack = pickLevelingTrack()
+	player.SetAttributeModifiers()
 	player.SetDerivedStats()
+	addClassStartingEquipment(player)
 	player.Health = player.DerivedStats["Constitution"]["MaxHealth"]
 	player.Mana = player.DerivedStats["Intelligence"]["MaxMana"]
 
@@ -245,6 +256,83 @@ func statAssign(p *Player, stats []int){
 	}
 
 	fmt.Printf("Final Attributes: %+v\n", p.Attributes)
+}
+
+// pickClass allows the user to select a class for their player.
+func pickClass() string{
+	confirmation := false
+	for !confirmation{
+		fmt.Println("Available classes:")
+		for _, class := range classes.Classes{
+			fmt.Printf("(%s) %s: %s\n", class.Name, class.Name, class.Description)
+		}
+		
+		fmt.Print("Pick a class by number: ")
+		var classChoice int
+		fmt.Scan(&classChoice)
+		classChoice = choiceValidation(classChoice, 1, len(classes.Classes))
+		selectedClass := classes.ClassList[classChoice-1]
+		
+		fmt.Printf("You selected: %s\n", selectedClass)
+		fmt.Print("Confirm selection? (y/n): ")
+		var confirmInput string
+		fmt.Scan(&confirmInput)
+		if confirmInput == "y" || confirmInput == "Y"{
+			confirmation = true
+			return selectedClass
+		}
+	}
+
+	return classes.ClassList[0] //default return, should never reach here
+}
+
+// pickLevelingTrack allows the user to select a leveling track for their player.
+func pickLevelingTrack() LevelingTrack{
+	confirmation := false
+	var selectedTrack LevelingTrack
+	for !confirmation{
+		fmt.Println("Available Leveling Tracks:")
+		for i, track := range LevelingTracks{
+			fmt.Printf("(%d) %s", i+1, track)
+		}
+		
+		fmt.Print("Pick a leveling track by number: ")
+		var trackChoice int
+		fmt.Scan(&trackChoice)
+		trackChoice = choiceValidation(trackChoice, 1, len(LevelingTracks))
+		selectedTrack = LevelingTracks[trackChoice-1]
+		
+		fmt.Printf("You selected: %s\n", selectedTrack)
+		fmt.Print("Confirm selection? (y/n): ")
+		var confirmInput string
+		fmt.Scan(&confirmInput)
+		if confirmInput == "y" || confirmInput == "Y"{
+			confirmation = true
+		}
+	}
+
+	return selectedTrack
+}
+
+// addClassStartingEquipment adds the starting equipment for the player's class to their inventory.
+func addClassStartingEquipment(p *Player){
+	classInfo := classes.Classes[p.Class]
+	for _, item := range classInfo.StartingEquipment{
+		gear, found := equipment.GetEquipmentByName(item)
+		if found{
+			p.AddEquipmentToInventory(gear)
+		}
+		switch gearTyped := gear.(type){
+			case equipment.Weapon:
+				if p.CurrentWeapon.Name == ""{
+					p.CurrentWeapon = gearTyped
+				}
+			case equipment.Armor:
+				if p.CurrentArmor.Name == ""{
+					p.CurrentArmor = gearTyped
+				}
+			}
+	}	
 }
 
 // choiceValidation ensures the input is within the specified range.

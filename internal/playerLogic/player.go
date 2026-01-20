@@ -3,6 +3,7 @@ package playerLogic
 import (
 	"fmt"
 
+	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/classes"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/equipment"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/gameLogic"
 )
@@ -13,6 +14,7 @@ type Player struct{
 	Background string `json:"background"`
 	Class string `json:"class"`
 	Level int `json:"level"`
+	LevelTrack LevelingTrack `json:"level_track"`
 	Experience int `json:"experience"`
 	Health int `json:"health"`
 	Mana int `json:"mana"`
@@ -21,6 +23,8 @@ type Player struct{
 	Inventory []equipment.Equipment `json:"inventory"`
 	AttributeModifiers map[string]int `json:"attributeModifiers"`
 	DerivedStats map[string]map[string]int `json:"derivedStats"`
+	HitDieRolls []int `json:"hitDieRolls"`
+	HitDieTotal int `json:"hitDieTotal"`
 	CurrentArmor equipment.Armor `json:"currentArmor"`
 	CurrentWeapon equipment.Weapon `json:"currentWeapon"`
 	PlayerPositionX int `json:"playerPositionX"`
@@ -55,23 +59,23 @@ func (p *Player) SetAttributeModifiers(){
 func (p *Player) SetDerivedStats(){
 	p.DerivedStats = map[string]map[string]int{
 		"Strength": {
-			"MeleeToHit": p.AttributeModifiers["Strength"],
-			"MeleeAttackPower": p.AttributeModifiers["Strength"] * 2,
+			"MeleeToHit": p.AttributeModifiers["Strength"] * p.Level,
+			"MeleeAttackPower": p.AttributeModifiers["Strength"] * p.Level * 2,
 		},
 		"Dexterity": {
-			"RangedToHit": p.AttributeModifiers["Dexterity"],
-			"RangedAttackPower": p.AttributeModifiers["Dexterity"] * 2,
-			"BaseArmor": p.AttributeModifiers["Dexterity"],
+			"RangedToHit": p.AttributeModifiers["Dexterity"] * p.Level,
+			"RangedAttackPower": p.AttributeModifiers["Dexterity"] * p.Level * 2,
+			"BaseArmor": p.AttributeModifiers["Dexterity"] * p.Level,
 		},
 		"Intelligence": {
-			"ShortRestManaRegen": p.AttributeModifiers["Intelligence"],
-			"MaxMana": p.AttributeModifiers["Intelligence"] * 5,
-			"SpellToHit": p.AttributeModifiers["Intelligence"],
-			"SpellPower": p.AttributeModifiers["Intelligence"] * 3,
+			"ShortRestManaRegen": p.AttributeModifiers["Intelligence"] * p.Level,
+			"MaxMana": (p.AttributeModifiers["Intelligence"] * p.Level * 3) + classes.GetClassManaBonus(p.Class, p.Level),
+			"SpellToHit": p.AttributeModifiers["Intelligence"] * p.Level,
+			"SpellPower": p.AttributeModifiers["Intelligence"] * p.Level * 3,
 		},
 		"Constitution": {
-			"ShortRestHealthRegen": p.AttributeModifiers["Constitution"] * 2,
-			"MaxHealth": p.AttributeModifiers["Constitution"] * 10,
+			"ShortRestHealthRegen": p.AttributeModifiers["Constitution"] * 2 * p.Level,
+			"MaxHealth": (p.AttributeModifiers["Constitution"] * p.Level * 5) + p.HitDieTotal,
 		},
 	}
 }
@@ -81,26 +85,26 @@ func (p *Player) SetDerivedStatsForAttribute(attribute string){
 	switch attribute{
 		case "Strength":
 			p.DerivedStats[attribute] = map[string]int{
-				"MeleeToHit": p.AttributeModifiers[attribute],
-				"MeleeAttackPower": p.AttributeModifiers[attribute] * 2,
+				"MeleeToHit": p.AttributeModifiers[attribute] * p.Level,
+				"MeleeAttackPower": p.AttributeModifiers[attribute] * p.Level * 2,
 			}
 		case "Dexterity":
 			p.DerivedStats[attribute] = map[string]int{
-				"RangedToHit": p.AttributeModifiers[attribute],
-				"RangedAttackPower": p.AttributeModifiers[attribute] * 2,
-				"BaseArmor": p.AttributeModifiers[attribute],
+				"RangedToHit": p.AttributeModifiers[attribute] * p.Level,
+				"RangedAttackPower": p.AttributeModifiers[attribute] * p.Level * 2,
+				"BaseArmor": p.AttributeModifiers[attribute] * p.Level,
 			}
 		case "Intelligence":
 			p.DerivedStats[attribute] = map[string]int{
-				"ShortRestManaRegen": p.AttributeModifiers[attribute],
-				"MaxMana": p.AttributeModifiers[attribute] * 5,
-				"SpellToHit": p.AttributeModifiers[attribute],
-				"SpellPower": p.AttributeModifiers[attribute] * 3,
+				"ShortRestManaRegen": p.AttributeModifiers[attribute] * p.Level,
+				"MaxMana": (p.AttributeModifiers[attribute]  * p.Level * 3) + classes.GetClassManaBonus(p.Class, p.Level),
+				"SpellToHit": p.AttributeModifiers[attribute] * p.Level,
+				"SpellPower": p.AttributeModifiers[attribute] * p.Level * 3,
 			}
 		case "Constitution":
 			p.DerivedStats[attribute] = map[string]int{
-				"ShortRestHealthRegen": p.AttributeModifiers[attribute] * 2,
-				"MaxHealth": p.AttributeModifiers[attribute] * 10,
+				"ShortRestHealthRegen": p.AttributeModifiers[attribute] * 2 * p.Level,
+				"MaxHealth": (p.AttributeModifiers[attribute] * p.Level * 5) + p.HitDieTotal,
 			}
 	}
 }
@@ -124,6 +128,23 @@ func (p *Player) GetDerivedStat(attribute string, stat string) int{
 	}
 	return 0
 }
+
+func (p *Player) RollHitDie(){
+	hitDieType := classes.Classes[p.Class].HitDie
+	fmt.Println("Use max roll for hit die? (y/n): ")
+	var input string
+	fmt.Scan(&input)
+	
+	var roll int
+	if input == "y" || input == "Y"{
+		roll = hitDieType
+	} else {
+		roll = gameLogic.DiceRoll(hitDieType)
+	}
+	p.HitDieRolls = append(p.HitDieRolls, roll)
+	p.HitDieTotal += roll
+}
+	
 
 // SetLocation sets the player's position on the map.
 func (p *Player) SetLocation(y int, x int){
@@ -252,6 +273,19 @@ func (p *Player) ShowStats(){
 	fmt.Printf("  Constitution: %d\n", p.Attributes.Constitution)
 	fmt.Printf("  Charisma: %d\n", p.Attributes.Charisma)
 	fmt.Printf("  Wisdom: %d\n", p.Attributes.Wisdom)
+}
+
+
+func (p *Player) AddEquipmentToInventory(item equipment.Equipment){
+	p.Inventory = append(p.Inventory, item)
+}
+
+func (p *Player) EquipWeapon(weapon equipment.Weapon){
+	p.CurrentWeapon = weapon
+}
+
+func (p *Player) EquipArmor(armor equipment.Armor){
+	p.CurrentArmor = armor
 }
 
 // ShowEquipment prints the player's currently equipped weapon and armor.
