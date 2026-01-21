@@ -80,8 +80,8 @@ func (p *Player) SetDerivedStats(){
 	}
 }
 
-// SetDerivedStatsForAttribute updates the derived stats for a specific attribute.
-func (p *Player) SetDerivedStatsForAttribute(attribute string){
+// SetDerivedStatsByAttribute updates the derived stats for a specific attribute.
+func (p *Player) SetDerivedStatsByAttribute(attribute string){
 	switch attribute{
 		case "Strength":
 			p.DerivedStats[attribute] = map[string]int{
@@ -129,6 +129,7 @@ func (p *Player) GetDerivedStat(attribute string, stat string) int{
 	return 0
 }
 
+// RollHitDie rolls the hit die for the player and updates their hit die total.
 func (p *Player) RollHitDie(){
 	hitDieType := classes.Classes[p.Class].HitDie
 	fmt.Println("Use max roll for hit die? (y/n): ")
@@ -143,6 +144,49 @@ func (p *Player) RollHitDie(){
 	}
 	p.HitDieRolls = append(p.HitDieRolls, roll)
 	p.HitDieTotal += roll
+}
+
+// RerollAllHitDice rerolls all hit dice for the player and updates their hit die total.
+func (p *Player) RerollAllHitDice(){
+	hitDieType := classes.Classes[p.Class].HitDie
+	fmt.Println("Use max roll for hit die? (y/n): ")
+	var input string
+	fmt.Scan(&input)
+	
+	p.HitDieTotal = 0
+	for index, _ := range p.HitDieRolls{
+		var roll int
+		if input == "y" || input == "Y"{
+			roll = hitDieType
+		} else {
+			roll = gameLogic.DiceRoll(hitDieType)
+		}
+		p.HitDieRolls[index] = roll
+		p.HitDieTotal += roll
+	}
+}
+
+// RollHitDieToLevel rolls hit dice until the player reaches the target level.
+func (p *Player) RollHitDieToLevel(targetLevel int){
+	hitDieType := classes.Classes[p.Class].HitDie
+	fmt.Println("Use max roll for hit die? (y/n): ")
+	var input string
+	fmt.Scan(&input)
+	
+	if input == "y" || input == "Y"{
+		for p.Level < targetLevel{
+			p.HitDieRolls = append(p.HitDieRolls, hitDieType)
+			p.HitDieTotal += hitDieType
+			p.Level++
+		}
+	} else {
+		for p.Level < targetLevel{
+			roll := gameLogic.DiceRoll(hitDieType)
+			p.HitDieRolls = append(p.HitDieRolls, roll)
+			p.HitDieTotal += roll
+			p.Level++
+		}
+	}
 }
 	
 
@@ -219,14 +263,14 @@ func (p *Player) BuffAttribute(attr string, amount int, duration int){
 		return
 	}
 	p.Buffs[attr] = buff
-	p.SetDerivedStatsForAttribute(attr)
+	p.SetDerivedStatsByAttribute(attr)
 	
 }
 
 // RemoveBuff removes the buff from the specified attribute.
 func (p *Player) RemoveBuff(attr string){
 	delete(p.Buffs, attr)
-	p.SetDerivedStatsForAttribute(attr)
+	p.SetDerivedStatsByAttribute(attr)
 }
 
 // GetBuffs returns a slice of all active buffs on the player.
@@ -293,4 +337,115 @@ func (p *Player) ShowEquipment(){
 	fmt.Println("Current Equipment:")
 	fmt.Printf("  Weapon: %s\n", p.CurrentWeapon.String())
 	fmt.Printf("  Armor: %s\n", p.CurrentArmor.String())
+}
+
+// ChangeClass changes the player's class and updates relevant stats.
+func (p *Player) ChangeClass(newClass string) error{
+	fmt.Printf("Available Classes: %v\n", classes.ClassList)
+	if _, exists := classes.Classes[newClass]; !exists{
+		return fmt.Errorf("class %s does not exist", newClass)
+	}
+
+	p.Class = newClass
+	p.SetAttributeModifiers()
+	p.RerollAllHitDice()
+	p.SetDerivedStats()
+	return nil
+}
+
+// ChangeExperience changes the player's experience and checks for level changes.
+func (p *Player) ChangeExperience(newExperience int) error{
+	if newExperience < 0{
+		return fmt.Errorf("experience cannot be negative")
+	}
+
+	p.Experience = newExperience
+	for CanLevelUp(p){
+		LevelUp(p)
+	}
+	for CanLevelDown(p){
+		LevelDown(p)
+	}
+	return nil
+}
+
+// ChangeLevelTrack changes the player's leveling track and adjusts level accordingly.
+func (p *Player) ChangeLevelTrack(newTrack LevelingTrack) error{
+	p.LevelTrack = newTrack
+	for CanLevelDown(p){
+		LevelDown(p)
+	} 
+	for CanLevelUp(p){
+		LevelUp(p)
+	}
+	return nil
+}
+
+// ChangeLevel changes the player's level and updates relevant stats.
+func (p *Player) ChangeLevel(newLevel int) error{
+	if newLevel < 1 || newLevel > 20{
+		return fmt.Errorf("level must be between 1 and 20")
+	}
+
+	p.Experience = GetExperienceForLevel(newLevel, p.LevelTrack)
+	p.Level = newLevel
+
+	p.SetAttributeModifiers()
+	p.RollHitDieToLevel(newLevel)
+	p.SetDerivedStats()
+	return nil
+}
+
+// ChangeAttribute changes a specific attribute of the player and updates relevant stats.
+func (p *Player) ChangeAttribute(attr string, newValue int) error{
+	if newValue < 1 || newValue > 20{
+		return fmt.Errorf("attribute value must be between 1 and 20")
+	}
+
+	switch attr{
+		case "Strength":
+			p.Attributes.Strength = newValue
+		case "Dexterity":
+			p.Attributes.Dexterity = newValue
+		case "Intelligence":
+			p.Attributes.Intelligence = newValue
+		case "Constitution":
+			p.Attributes.Constitution = newValue
+		case "Charisma":
+			p.Attributes.Charisma = newValue
+		case "Wisdom":
+			p.Attributes.Wisdom = newValue
+		default:
+			return fmt.Errorf("invalid attribute: %s", attr)
+	}
+
+	p.SetAttributeModifiers()
+	p.SetDerivedStatsByAttribute(attr)
+	return nil
+}
+
+// ChangeAllAttributes changes all attributes of the player and updates relevant stats.
+func (p *Player) ChangeAllAttributes(newAttributes [6]int) error{
+	p.Attributes.Strength = newAttributes[0]
+	p.Attributes.Dexterity = newAttributes[1]
+	p.Attributes.Intelligence = newAttributes[2]
+	p.Attributes.Constitution = newAttributes[3]
+	p.Attributes.Charisma = newAttributes[4]
+	p.Attributes.Wisdom = newAttributes[5]
+
+	p.SetAttributeModifiers()
+	p.SetDerivedStats()
+	return nil
+}
+
+// ToSlice converts the PlayerAttributes to a slice of integers.
+func (a *PlayerAttributes) ToSlice() []int{
+	return []int{
+		a.Strength,
+		a.Dexterity,
+		a.Intelligence,
+		a.Constitution,
+		a.Charisma,
+		a.Wisdom,
+	}
 }

@@ -1,5 +1,7 @@
 package playerLogic
 
+import "fmt"
+
 type LevelingCurve struct{
 	LevelCaps []int
 	ExperienceRequired []int
@@ -79,6 +81,27 @@ func CanLevelUp(player *Player) bool {
 	return player.Experience >= requiredXP
 }
 
+// CanLevelUpTo checks if the player can level up to the target level.
+func CanLevelUpTo(player *Player, targetLevel int) bool {
+	curve := GetLevelingCurve(player.LevelTrack)
+	if targetLevel <= player.Level || targetLevel > len(curve.ExperienceRequired) {
+		return false
+	}
+	requiredXP := curve.ExperienceRequired[targetLevel-1]
+	return player.Experience >= requiredXP
+}
+
+// CanLevelDown checks if the player can level down based on their experience when changing level tracks.
+func CanLevelDown(player *Player) bool{
+	curve := GetLevelingCurve(player.LevelTrack)
+	if player.Level <= 1 || player.Level > len(curve.ExperienceRequired) {
+		return false
+	}
+	requiredXP := curve.ExperienceRequired[player.Level-1]
+	return player.Experience < requiredXP
+}
+
+
 // LevelUp increases the player's level and updates their stats accordingly.
 func LevelUp(player *Player) {
 	player.Level++
@@ -86,10 +109,43 @@ func LevelUp(player *Player) {
 	player.SetDerivedStats()
 }
 
+// LevelDown decreases the player's level and updates their stats accordingly.
+func LevelDown(player *Player) {
+	if player.Level > 1 {
+		player.Level--
+		player.SetAttributeModifiers()
+		player.SetDerivedStats()
+	}
+}
+
+// GetExperienceForNextLevel returns the experience required for the next level.
 func GetExperienceForNextLevel(player *Player) int {
 	curve := GetLevelingCurve(player.LevelTrack)
 	if player.Level >= len(curve.ExperienceRequired) {
 		return -1 // Max level reached
 	}
 	return curve.ExperienceRequired[player.Level]
+}
+
+// GetExperienceForLevel returns the experience required for a specific level.
+func GetExperienceForLevel(level int, track LevelingTrack) int {
+	curve := GetLevelingCurve(track)
+	if level <= 0 || level > len(curve.ExperienceRequired) {
+		return -1 // Invalid level
+	}
+	return curve.ExperienceRequired[level-1]
+}
+
+// GetLevelTrack converts a string to a LevelingTrack type.
+func GetLevelTrack(track string) (LevelingTrack, error){
+	switch track {
+		case "fast":
+			return LevelingTrackFast, nil
+		case "normal":
+			return LevelingTrackNormal, nil
+		case "slow":
+			return LevelingTrackSlow, nil
+		default:
+			return LevelingTrackNormal, fmt.Errorf("invalid leveling track: %s", track)
+	}
 }
