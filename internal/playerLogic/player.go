@@ -438,6 +438,32 @@ func (p *Player) ChangeAllAttributes(newAttributes [6]int) error{
 	return nil
 }
 
+// SetHP sets the player's health to a specific value, ensuring it does not exceed maximum health.
+func (p *Player) SetHP(newHP int) error{
+	if newHP < 0{
+		return fmt.Errorf("HP cannot be negative")
+	}
+	maxHP := p.DerivedStats["Constitution"]["MaxHealth"]
+	if newHP > maxHP{
+		p.Health = maxHP
+	} else {
+		p.Health = newHP
+	}
+	return nil
+}
+
+// EditBasicPlayerVariables edits basic string variables of the player.
+func (p *Player) EditBasicPlayerVariables(variable, value string){
+		switch variable{
+			case "name":
+				p.Name = value
+			case "description":
+				p.Description = value
+			case "background":
+				p.Background = value
+		}
+}
+
 // ToSlice converts the PlayerAttributes to a slice of integers.
 func (a *PlayerAttributes) ToSlice() []int{
 	return []int{

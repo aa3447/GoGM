@@ -1,22 +1,27 @@
-package playerLogic
+package playerEditor
 
 import (
 	"fmt"
 
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/io"
+	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/playerLogic"
+	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/serialization"
 )
 
-func PlayerEditor(){
-	commands := io.GetInput()
-
+func PlayerEditor(player ...*playerLogic.Player) *playerLogic.Player{
+	var currentPlayer *playerLogic.Player
+	if len(player) > 0{
+		currentPlayer = player[0]
+	}
+	
 	for {
+		commands := io.GetInput()
 		command := commands[0]
 		args := commands[1:]
-		
-		var currentPlayer *Player
+				
 		switch command{
 			case "create":
-				currentPlayer = CreatePlayer()
+				currentPlayer = playerLogic.CreatePlayer()
 			case "edit":
 				if len(args) < 2 {
 					fmt.Println("Usage: edit  <variable> <value>")
@@ -31,7 +36,7 @@ func PlayerEditor(){
 
 				switch whatToEdit{
 					case "name", "description", "background":
-						currentPlayer.editBasicPlayerVariables(whatToEdit, value)
+						currentPlayer.EditBasicPlayerVariables(whatToEdit, value)
 					case "class":
 						if err := currentPlayer.ChangeClass(value); err != nil {
 							fmt.Println("Error changing class:", err)
@@ -44,7 +49,7 @@ func PlayerEditor(){
 							fmt.Println("Error setting level:", err)
 						}
 					case "level_track":
-						levelTrack, err := GetLevelTrack(value)
+						levelTrack, err := playerLogic.GetLevelTrack(value)
 						if err != nil {
 							fmt.Println("Error changing level track:", err)
 							continue
@@ -85,20 +90,61 @@ func PlayerEditor(){
 								fmt.Println("Error changing attribute:", err)
 							}
 						}
+					case "inventory":
+						// Reserve for inventory manager
+					case "hp":
+						var how string
+						fmt.Sscanf(value, "%s", &how)
+						switch how {
+							case "set":
+								if len(args) < 3 {
+									fmt.Println("Usage: edit hp set <value>")
+									continue
+								}
+								var hpValue int
+								fmt.Sscanf(args[2], "%d", &hpValue)
+								if err := currentPlayer.SetHP(hpValue); err != nil {
+									fmt.Println("Error setting HP:", err)
+								}
+							case "roll":
+								currentPlayer.RerollAllHitDice()
+							}
 					default:
 						fmt.Println("Unknown variable to edit:", whatToEdit)
 				}
+			case "save":
+				if currentPlayer == nil{
+					fmt.Println("No player loaded. Please create a player first.")
+					continue
+				}
+				
+				var saveName string
+				if len(args) >= 1{
+					saveName = args[0]
+				} else {
+					saveName = currentPlayer.Name
+				}
+				if err := serialization.SaveToFile(*currentPlayer, "player", "player", saveName);  err != nil {
+					fmt.Println("Error saving player:", err)
+				} else {
+					fmt.Println("Player saved successfully.")
+				}
+			case "load":
+				if len(args) < 1{
+					fmt.Println("Usage: load  <player_name>")
+					continue
+				}
+				loadedPlayer, err := serialization.LoadFromJSONFile("player", "player", args[0], playerLogic.Player{})
+				if err != nil {
+					fmt.Println("Error loading player:", err)
+					continue
+				}
+				currentPlayer = loadedPlayer
+			case "exit":
+				fmt.Println("Exiting Player Editor.")
+				return currentPlayer
+			default:
+				fmt.Println("Unknown command:", command)
 		}
 	}
-}
-
-func (p *Player) editBasicPlayerVariables(variable, value string){
-		switch variable{
-			case "name":
-				p.Name = value
-			case "description":
-				p.Description = value
-			case "background":
-				p.Background = value
-		}
 }
