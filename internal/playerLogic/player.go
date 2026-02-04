@@ -309,7 +309,7 @@ func (p *Player) ShowInventory(){
 func (p *Player) ShowStats(){
 	fmt.Printf("Player: %s\n", p.Name)
 	fmt.Printf("Level: %d, Experience: %d\n", p.Level, p.Experience)
-	fmt.Printf("Health: %d/%d, Mana: %d/%d\n", p.Health, p.DerivedStats["MaxHealth"], p.Mana, p.DerivedStats["MaxMana"])
+	fmt.Printf("Health: %d/%d, Mana: %d/%d\n", p.Health, p.DerivedStats["Constitution"]["MaxHealth"], p.Mana, p.DerivedStats["Intelligence"]["MaxMana"])
 	fmt.Printf("Attributes:\n")
 	fmt.Printf("  Strength: %d\n", p.Attributes.Strength)
 	fmt.Printf("  Dexterity: %d\n", p.Attributes.Dexterity)

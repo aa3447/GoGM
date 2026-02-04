@@ -1,4 +1,4 @@
-package playerEditor
+package editors
 
 
 import (
@@ -9,6 +9,7 @@ import (
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/serialization"
 )
 
+// NpcEditor provides an interface to create and edit NPCs.
 func NpcEditor(){
 	var currentNPC *playerLogic.NPC
 
@@ -18,13 +19,13 @@ func NpcEditor(){
 		args := commands[1:]
 		
 		switch command{
-			case "create":
+			case "create", "c":
 				if len(args) < 2{
 					fmt.Println("Usage: create  <name> <description>")
 					continue
 				}
 				currentNPC = playerLogic.NewNPC(args[0], args[1])
-			case "edit":
+			case "edit", "e":
 				if len(args) < 2 {
 					fmt.Println("Usage: edit  <variable> <value>")
 					continue
@@ -40,7 +41,7 @@ func NpcEditor(){
 				} else {
 					currentNPC.Player = *PlayerEditor(&currentNPC.Player)
 				}
-			case "save":
+			case "save", "s":
 				var saveName string
 				if len(args) >= 1{
 					saveName = args[0]
@@ -52,6 +53,22 @@ func NpcEditor(){
 				} else {
 					fmt.Println("NPC saved successfully.")
 				}
+			case "load", "l":
+				if len(args) < 1{
+					fmt.Println("Usage: load  <npc_name>")
+					continue
+				}
+				loadedNPC, err := serialization.LoadFromJSONFile("gm", "npc", args[0], playerLogic.NPC{})
+				if err != nil{
+					fmt.Println("Error loading NPC:", err)
+				} else {
+					currentNPC = loadedNPC
+					fmt.Println("NPC loaded successfully.")
+				}
+			case "view", "show", "v":
+				// View NPC stats
+			case "quit", "exit", "q":
+				return
 			default:
 				fmt.Println("Unknown command:", command)
 		}

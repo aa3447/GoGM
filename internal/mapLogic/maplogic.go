@@ -12,19 +12,6 @@ import (
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/gameState"
 )
 
-type NPC struct{
-	Name string
-	Description string
-	Hostile bool
-	Health int
-	Attack int
-	Defense int
-}
-
-type Encounter struct{
-	NPCs []NPC `json:"npcs"`
-}
-
 type Map struct{
 	Name string `json:"name"`
 	Description string `json:"description"`
@@ -35,7 +22,6 @@ type Map struct{
 	GameState *gameState.Gamestate `json:"-"`
 
 }
-
 
 type PlayerMove struct{
 	PlayerName string `json:"player_name"`
@@ -157,6 +143,40 @@ func generateEntranceAndExit(tileMap [][]Tile) []int{
 	}
 
 	return  entranceAndExitLocation
+}
+
+// GenEmptyMap generates an empty map with all grassy tiles
+func GenEmptyMap(sizeY int, sizeX int, name string) (*Map, error){
+	if sizeY <= 0 || sizeX <= 0{
+		return nil, errors.New("invalid map sizeX")
+	}
+
+	tileMap := make([][]Tile, sizeY)
+	for rowIndex := range sizeY{
+		for columnIndex := range sizeX{
+			tile := Tile{
+				Name: fmt.Sprintf("%d,%d", rowIndex, columnIndex),
+				Terrain: TerrainGrass,
+				Description: "An empty grassy field.",
+				Walkable: true,
+				VisibleOnMap: false,
+			}
+			tileMap[rowIndex] = append(tileMap[rowIndex], tile)
+		}
+	}
+
+	if name == ""{
+		name = "Empty Map"
+	}
+	m := Map{
+		Name: name,
+		Description: "An empty map.",
+		Tiles: tileMap,
+		EntranceLocation: []int{},
+		ExitLocation: []int{},
+	}
+
+	return &m, nil
 }
 
 // PrintMap prints the map to the console, showing only visible tiles.

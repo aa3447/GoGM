@@ -1,4 +1,4 @@
-package playerEditor
+package editors
 
 import (
 	"fmt"
@@ -8,6 +8,8 @@ import (
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/serialization"
 )
 
+
+// PlayerEditor provides an interface to create and edit player characters.
 func PlayerEditor(player ...*playerLogic.Player) *playerLogic.Player{
 	var currentPlayer *playerLogic.Player
 	if len(player) > 0{
@@ -20,7 +22,7 @@ func PlayerEditor(player ...*playerLogic.Player) *playerLogic.Player{
 		args := commands[1:]
 				
 		switch command{
-			case "create":
+			case "create", "c":
 				currentPlayer = playerLogic.CreatePlayer()
 			case "edit":
 				if len(args) < 2 {
@@ -112,7 +114,7 @@ func PlayerEditor(player ...*playerLogic.Player) *playerLogic.Player{
 					default:
 						fmt.Println("Unknown variable to edit:", whatToEdit)
 				}
-			case "save":
+			case "save", "s":
 				if currentPlayer == nil{
 					fmt.Println("No player loaded. Please create a player first.")
 					continue
@@ -129,7 +131,7 @@ func PlayerEditor(player ...*playerLogic.Player) *playerLogic.Player{
 				} else {
 					fmt.Println("Player saved successfully.")
 				}
-			case "load":
+			case "load", "l":
 				if len(args) < 1{
 					fmt.Println("Usage: load  <player_name>")
 					continue
@@ -140,7 +142,9 @@ func PlayerEditor(player ...*playerLogic.Player) *playerLogic.Player{
 					continue
 				}
 				currentPlayer = loadedPlayer
-			case "exit":
+			case "view", "show", "v":
+				// View player stats
+			case "exit", "quit", "q":
 				fmt.Println("Exiting Player Editor.")
 				return currentPlayer
 			default:
