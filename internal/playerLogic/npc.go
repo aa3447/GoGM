@@ -1,5 +1,9 @@
 package playerLogic
 
+import (
+	"fmt"
+)
+
 type NPC struct{
 	DialogueLines map[string][]string `json:"dialogue_lines"`
 	Player
@@ -45,4 +49,11 @@ func (npc *NPC) GetDialogue(topic string) []string{
 		return lines
 	}
 	return []string{}
+}
+
+func (npc *NPC) ShowDialogueTopics(){
+	fmt.Println("Dialogue Topics:")
+	for topic := range npc.DialogueLines{
+		fmt.Printf("- %s\n", topic)
+	}
 }

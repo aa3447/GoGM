@@ -121,7 +121,7 @@ func verifyArmorType(t ArmorType) bool{
 }
 
 
-func (a *Armor) String() string {
+func (a Armor) String() string {
 	return fmt.Sprintf("%s (Type: %d, Defense: %d, Weight: %d, Rarity: %d)", a.Name, a.Type, a.Defense, a.Weight, a.Rarity)
 }
 

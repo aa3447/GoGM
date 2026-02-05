@@ -143,7 +143,7 @@ func PlayerEditor(player ...*playerLogic.Player) *playerLogic.Player{
 				}
 				currentPlayer = loadedPlayer
 			case "view", "show", "v":
-				// View player stats
+				currentPlayer.ShowAll()
 			case "exit", "quit", "q":
 				fmt.Println("Exiting Player Editor.")
 				return currentPlayer

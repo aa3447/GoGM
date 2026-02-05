@@ -7,6 +7,7 @@ import (
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/io"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/mapLogic"
 	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/serialization"
+	"home/aa3447/workspace/github.com/aa3447/GoGM/internal/equipment"
 )
 
 // MapEditor provides an interface to create and edit maps.
@@ -115,8 +116,10 @@ func tileEditor(currentMap *mapLogic.Map) *mapLogic.Map{
 				if err != nil {
 					fmt.Println("Error setting tile option:", err)
 				}
-			case "show":
-				// reserved for tile showing
+			case "display":
+				currentTile.Display()
+			case "details":
+				currentTile.Details()
 			case "select":
 				y, err := strconv.Atoi(args[0])
 				if err != nil {
@@ -150,7 +153,18 @@ func tileOptionsEditor(currentTile *mapLogic.Tile, what, value string) (*mapLogi
 		case "name":
 			currentTile.Name = value
 		case "terrain":
-			//
+			switch value{
+				case "grass":
+					currentTile.Terrain = mapLogic.TerrainGrass
+				case "water":
+					currentTile.Terrain = mapLogic.TerrainWater
+				case "mountain":
+					currentTile.Terrain = mapLogic.TerrainMountain
+				case "forest":
+					currentTile.Terrain = mapLogic.TerrainForest
+				default:
+					return currentTile, fmt.Errorf("unknown terrain type: %s", value)
+			}
 		case "description":
 			currentTile.Description = value
 		case "walkable":
@@ -164,7 +178,14 @@ func tileOptionsEditor(currentTile *mapLogic.Tile, what, value string) (*mapLogi
 		case "visible":
 			currentTile, err = tileBooleanSelector(currentTile, "visible", value)
 		case "items":
-			//	
+			equip , exists := equipment.GetEquipmentByName(value)
+			if !exists{
+				return currentTile, fmt.Errorf("equipment not found: %s", value)
+			}
+			if currentTile.Equipment == nil{
+				currentTile.Equipment = []equipment.Equipment{}
+			}
+			currentTile.Equipment = append(currentTile.Equipment, equip)
 		default:
 			fmt.Println("Unknown set command:", what)
 	}

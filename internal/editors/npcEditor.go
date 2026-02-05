@@ -66,7 +66,11 @@ func NpcEditor(){
 					fmt.Println("NPC loaded successfully.")
 				}
 			case "view", "show", "v":
-				// View NPC stats
+				if currentNPC == nil{
+					fmt.Println("No NPC loaded. Please create or load an NPC first.")
+					continue
+				}
+				currentNPC.Player.ShowAll()
 			case "quit", "exit", "q":
 				return
 			default:

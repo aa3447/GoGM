@@ -42,7 +42,7 @@ func (t *Tile) GetName() string{
 }
 
 // Show provides a simple visual representation of the tile based on its terrain.
-func (t *Tile) Show(){
+func (t *Tile) Display(){
 	switch t.Terrain{
 		case TerrainGrass:
 			fmt.Print(".")

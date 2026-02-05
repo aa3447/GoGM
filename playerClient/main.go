@@ -150,9 +150,9 @@ func gameLoop(channel *ampq.Channel, pl *player.Player, campaign *campaign.Campa
 			case "inventory":
 				pl.ShowInventory()
 			case "stats":
-				pl.ShowStats()
+				pl.ShowAll()
 			case "equipment":
-				pl.ShowEquipment()
+				pl.ShowEquipped()
 			case "look":
 				//handleLook(args)
 			case "map":

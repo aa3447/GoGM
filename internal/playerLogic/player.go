@@ -297,19 +297,15 @@ func (p *Player) ListBuffs(){
 	}
 }
 
-// ShowInventory prints the player's inventory.
-func (p *Player) ShowInventory(){
-	fmt.Println("Inventory:")
-	for _, item := range p.Inventory{
-		fmt.Printf("- %s: %s\n", item.GetName(), item.GetDescription())
-	}
+// ShowDescription prints the player's basic information.
+func (p *Player) ShowDescription(){
+	fmt.Printf("Player: %s\n", p.Name)
+	fmt.Printf("Level: %d, Level Track: %s, Experience: %d\n", p.Level, p.LevelTrack, p.Experience)
+	fmt.Printf("Health: %d/%d, Mana: %d/%d\n", p.Health, p.DerivedStats["Constitution"]["MaxHealth"], p.Mana, p.DerivedStats["Intelligence"]["MaxMana"])
 }
 
-// ShowStats prints the player's stats.
-func (p *Player) ShowStats(){
-	fmt.Printf("Player: %s\n", p.Name)
-	fmt.Printf("Level: %d, Experience: %d\n", p.Level, p.Experience)
-	fmt.Printf("Health: %d/%d, Mana: %d/%d\n", p.Health, p.DerivedStats["Constitution"]["MaxHealth"], p.Mana, p.DerivedStats["Intelligence"]["MaxMana"])
+// ShowAttributes prints the player's attributes.
+func (p *Player) ShowAttributes(){
 	fmt.Printf("Attributes:\n")
 	fmt.Printf("  Strength: %d\n", p.Attributes.Strength)
 	fmt.Printf("  Dexterity: %d\n", p.Attributes.Dexterity)
@@ -319,6 +315,66 @@ func (p *Player) ShowStats(){
 	fmt.Printf("  Wisdom: %d\n", p.Attributes.Wisdom)
 }
 
+// ShowBuffs prints the player's active buffs.
+func (p *Player) ShowBuffs(){
+	if len(p.Buffs) == 0{
+		fmt.Println("No active buffs.")
+		return
+	}
+	fmt.Println("Active Buffs:")
+	for _, buff := range p.Buffs{
+		fmt.Printf("- %s\n", buff.String())
+	}
+}
+
+// ShowInventory prints the player's inventory.
+func (p *Player) ShowInventory(){
+	fmt.Println("Inventory:")
+	for _, item := range p.Inventory{
+		fmt.Printf("- %s\n", item.String())
+	}
+}
+
+// ShowDerivedStats prints the player's derived stats.
+func (p *Player) ShowDerivedStats(){
+	fmt.Println("Derived Stats:")
+	for attr, stats := range p.DerivedStats{
+		fmt.Printf(" %s:\n", attr)
+		for statName, statValue := range stats{
+			fmt.Printf("   %s: %d\n", statName, statValue)
+		}
+	}
+}
+
+// ShowHitDieStats prints the player's hit die rolls and total.
+func (p *Player) ShowHitDieStats(){
+	class := classes.Classes[p.Class]
+	hitDieString :=  "Hit Die Rolls:"
+	for _, roll := range p.HitDieRolls{
+		hitDieString += fmt.Sprintf(" %d ", roll)
+	}
+	fmt.Println(hitDieString)
+	fmt.Printf("Hit Die Total: %d\n", p.HitDieTotal)
+	fmt.Printf("Hit Die: d%d\n", class.HitDie)
+}
+
+// ShowEquipment prints the player's currently equipped weapon and armor.
+func (p *Player) ShowEquipped(){
+	fmt.Println("Current Equipment:")
+	fmt.Printf("  Weapon: %s\n", p.CurrentWeapon.String())
+	fmt.Printf("  Armor: %s\n", p.CurrentArmor.String())
+}
+
+// ShowAll prints all relevant information about the player.
+func (p *Player) ShowAll(){
+	p.ShowDescription()
+	p.ShowAttributes()
+	p.ShowDerivedStats()
+	p.ShowHitDieStats()
+	p.ShowEquipped()
+	p.ShowBuffs()
+	p.ShowInventory()
+}
 
 func (p *Player) AddEquipmentToInventory(item equipment.Equipment){
 	p.Inventory = append(p.Inventory, item)
@@ -330,13 +386,6 @@ func (p *Player) EquipWeapon(weapon equipment.Weapon){
 
 func (p *Player) EquipArmor(armor equipment.Armor){
 	p.CurrentArmor = armor
-}
-
-// ShowEquipment prints the player's currently equipped weapon and armor.
-func (p *Player) ShowEquipment(){
-	fmt.Println("Current Equipment:")
-	fmt.Printf("  Weapon: %s\n", p.CurrentWeapon.String())
-	fmt.Printf("  Armor: %s\n", p.CurrentArmor.String())
 }
 
 // ChangeClass changes the player's class and updates relevant stats.

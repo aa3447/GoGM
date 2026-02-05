@@ -158,7 +158,7 @@ func verifyWeaponType(t WeaponType) bool{
 	}
 }
 
-func (w *Weapon) String() string {
+func (w Weapon) String() string {
 	return fmt.Sprintf("%s (Type: %d, Damage: %d, Weight: %d, Rarity: %d)", w.Name, w.Type, w.Damage, w.Weight, w.Rarity)
 }
 

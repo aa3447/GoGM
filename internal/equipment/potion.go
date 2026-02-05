@@ -1,5 +1,9 @@
 package equipment
 
+import (
+	"fmt"
+)
+
 type PotionEffect int
 const (
 	EffectHeal PotionEffect = iota
@@ -66,18 +70,21 @@ func GetAllPotionTypes() []Potion{
 	return potions
 }
 
-func (p *Potion) GetName() string{
+func (p Potion) String() string {
+	return fmt.Sprintf("%s (Effect: %d, Power: %d, Duration: %d, Rarity: %d)", p.Name, p.Effect, p.Power, p.Duration, p.Rarity)
+}
+func (p Potion) GetName() string{
 	return p.Name
 }
-func (p *Potion) GetDescription() string{
+func (p Potion) GetDescription() string{
 	return p.Description
 }
-func (p *Potion) GetWeight() int{
+func (p Potion) GetWeight() int{
 	return 1 // Potions have a fixed weight of 1 unit
 }
-func (p *Potion) GetRarity() Rarity{
+func (p Potion) GetRarity() Rarity{
 	return p.Rarity
 }
-func (p *Potion) IsCustomEquipment() bool{
+func (p Potion) IsCustomEquipment() bool{
 	return p.IsCustom
 }
