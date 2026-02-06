@@ -1,0 +1,77 @@
+{
+  "name": "a",
+  "description": "s",
+  "background": "d",
+  "class": "Mage",
+  "level": 1,
+  "level_track": "normal",
+  "experience": 0,
+  "health": 26,
+  "mana": 17,
+  "attributes": {
+    "strength": 12,
+    "dexterity": 22,
+    "intelligence": 16,
+    "constitution": 18,
+    "charisma": 16,
+    "wisdom": 18
+  },
+  "buffs": {},
+  "inventory": [],
+  "attributeModifiers": {
+    "Charisma": 3,
+    "Constitution": 4,
+    "Dexterity": 6,
+    "Intelligence": 3,
+    "Strength": 1,
+    "Wisdom": 4
+  },
+  "derivedStats": {
+    "Constitution": {
+      "MaxHealth": 26,
+      "ShortRestHealthRegen": 8
+    },
+    "Dexterity": {
+      "BaseArmor": 6,
+      "RangedAttackPower": 12,
+      "RangedToHit": 6
+    },
+    "Intelligence": {
+      "MaxMana": 17,
+      "ShortRestManaRegen": 3,
+      "SpellPower": 9,
+      "SpellToHit": 3
+    },
+    "Strength": {
+      "MeleeAttackPower": 2,
+      "MeleeToHit": 1
+    }
+  },
+  "hitDieRolls": [
+    6
+  ],
+  "hitDieTotal": 6,
+  "currentArmor": {
+    "name": "",
+    "description": "",
+    "defense": 0,
+    "type": 0,
+    "weight": 0,
+    "rarity": 0,
+    "is_custom": false
+  },
+  "currentWeapon": {
+    "name": "",
+    "description": "",
+    "damage": 0,
+    "type": 0,
+    "weight": 0,
+    "rarity": 0,
+    "is_custom": false
+  },
+  "playerPositionX": 0,
+  "playerPositionY": 0,
+  "initiative": 0,
+  "isUnconscious": false,
+  "isAlive": true
+}

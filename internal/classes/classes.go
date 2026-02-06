@@ -8,7 +8,7 @@ type Class struct{
 	PrimaryAttributes []string `json:"primaryAttributes"`
 	Proficiencies []string `json:"proficiencies"`
 	StartingEquipment []string `json:"startingEquipment"`
-	Skills []string `json:"skills"`
+	Abilities []string `json:"abilities"`
 }
 
 var Classes = map[string]Class{
@@ -20,7 +20,7 @@ var Classes = map[string]Class{
 		PrimaryAttributes: []string{"Strength", "Constitution"},
 		Proficiencies: []string{"All Armor", "Shields", "Melee Weapons"},
 		StartingEquipment: []string{"Longsword", "Shield", "Chainmail"},
-		Skills: []string{"Power Attack", "Shield Bash"},
+		Abilities: []string{"Power Attack", "Shield Bash"},
 	},
 	"Mage": {
 		Name: "Mage",
@@ -30,7 +30,7 @@ var Classes = map[string]Class{
 		PrimaryAttributes: []string{"Intelligence", "Wisdom"},
 		Proficiencies: []string{"Light Armor", "Staves", "Wands"},
 		StartingEquipment: []string{"Spellbook", "Staff", "Robe"},
-		Skills: []string{"Fireball", "Teleport"},
+		Abilities: []string{"Fireball", "Teleport"},
 	},
 	"Rogue": {
 		Name: "Rogue",
@@ -40,7 +40,7 @@ var Classes = map[string]Class{
 		PrimaryAttributes: []string{"Dexterity", "Charisma"},
 		Proficiencies: []string{"Light Armor", "Daggers", "Bows"},
 		StartingEquipment: []string{"Dagger", "Bow", "Leather Armor"},
-		Skills: []string{"Backstab", "Stealth"},
+		Abilities: []string{"Backstab", "Stealth"},
 	},
 	"Cleric": {
 		Name: "Cleric",
@@ -50,7 +50,7 @@ var Classes = map[string]Class{
 		PrimaryAttributes: []string{"Wisdom", "Charisma"},
 		Proficiencies: []string{"Medium Armor", "Shields", "Maces"},
 		StartingEquipment: []string{"Mace", "Shield", "Chainmail"},
-		Skills: []string{"Heal", "Turn Undead"},
+		Abilities: []string{"Heal", "Turn Undead"},
 	},
 	"Ranger": {
 		Name: "Ranger",
@@ -60,7 +60,7 @@ var Classes = map[string]Class{
 		PrimaryAttributes: []string{"Dexterity", "Wisdom"},
 		Proficiencies: []string{"Medium Armor", "Bows", "Dual Wielding"},
 		StartingEquipment: []string{"Longbow", "Dual Daggers", "Leather Armor"},
-		Skills: []string{"Multiattack", "Tracking"},
+		Abilities: []string{"Multiattack", "Tracking"},
 	},
 }	
 

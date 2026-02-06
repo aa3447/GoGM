@@ -118,6 +118,7 @@ func NewPlayer(name, description, background, statMethod string, args ...[]int) 
 
 	statAssign(player, stats)
 	player.Class = pickClass()
+	player.RollHitDie()
 	player.LevelTrack = pickLevelingTrack()
 	player.SetAttributeModifiers()
 	player.SetDerivedStats()
@@ -223,7 +224,7 @@ func pointBuySystem() []int{
 func statAssign(p *Player, stats []int){
 	var choice int
 	var choicesMade = make(map[int]bool)
-	fmt.Printf("Here is your stat spread %v", stats)
+	fmt.Printf("Here is your stat spread %v\n", stats)
 
 	for i, stat := range stats{
 		fmt.Printf("Stat %d: %d\n", i+1, stat)
@@ -232,7 +233,7 @@ func statAssign(p *Player, stats []int){
 		
 		fmt.Scan(&choice)
 		choice = choiceValidation(choice, 1, 6)
-		for choicesMade[choice]{
+		for choicesMade[choice-1]{
 			fmt.Println("Stat already assigned, please choose another stat.")
 			fmt.Scan(&choice)
 			choice = choiceValidation(choice, 1, 6)
@@ -252,7 +253,7 @@ func statAssign(p *Player, stats []int){
 			case 6:
 				p.Attributes.Wisdom = stat
 		}
-		choicesMade[choice] = true
+		choicesMade[choice-1] = true
 	}
 
 	fmt.Printf("Final Attributes: %+v\n", p.Attributes)
@@ -263,8 +264,9 @@ func pickClass() string{
 	confirmation := false
 	for !confirmation{
 		fmt.Println("Available classes:")
-		for _, class := range classes.Classes{
-			fmt.Printf("(%s) %s: %s\n", class.Name, class.Name, class.Description)
+		for _, className := range classes.ClassList{
+			class := classes.Classes[className]
+			fmt.Printf("(%s) %s: %s\n", className, class.Name, class.Description)
 		}
 		
 		fmt.Print("Pick a class by number: ")
@@ -293,9 +295,10 @@ func pickLevelingTrack() LevelingTrack{
 	for !confirmation{
 		fmt.Println("Available Leveling Tracks:")
 		for i, track := range LevelingTracks{
-			fmt.Printf("(%d) %s", i+1, track)
+			fmt.Printf("(%d)%s ", i+1, track)
 		}
 		
+		fmt.Println()
 		fmt.Print("Pick a leveling track by number: ")
 		var trackChoice int
 		fmt.Scan(&trackChoice)

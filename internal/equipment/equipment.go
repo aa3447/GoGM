@@ -17,5 +17,8 @@ func GetEquipmentByName(name string) (Equipment, bool){
 	if armor, exists := mapOfArmors[name]; exists{
 		return armor, true
 	}
+	if potion, exists := mapOfPotions[name]; exists{
+		return potion, true
+	}
 	return nil, false
 }
